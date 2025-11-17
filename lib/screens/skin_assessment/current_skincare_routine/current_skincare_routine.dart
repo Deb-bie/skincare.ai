@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:myskiin/screens/skin_assessment/analyze_assement/analyze_assessment.dart';
+import 'package:provider/provider.dart';
 
+import '../../../providers/assessment_provider.dart';
 import '../age/age_option.dart';
 import 'current_skincare_routine_option.dart';
 
@@ -12,7 +14,51 @@ class CurrentSkincareRoutine extends StatefulWidget {
 }
 
 class _CurrentSkincareRoutineState extends State<CurrentSkincareRoutine> {
-  String? selectedAgeRange;
+  int currentAssessmentQuestion = 5;
+  int totalAssessmentQuestion = 5;
+  String? selectedCurrentRoutine;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Load existing selection if available
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = Provider.of<AssessmentProvider>(context, listen: false);
+      if (provider.assessmentData.currentRoutine != null) {
+        setState(() {
+          selectedCurrentRoutine = provider.assessmentData.currentRoutine;
+        });
+      }
+    });
+  }
+
+  void _skip() {
+    // Clear any selection from provider before skipping
+    final provider = Provider.of<AssessmentProvider>(context, listen: false);
+    provider.updateCurrentRoutine(null);
+
+    setState(() {
+      selectedCurrentRoutine = null;
+    });
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AnalyzeAssessment()),
+    );
+  }
+
+  void _saveAndContinue() {
+    if (selectedCurrentRoutine != null) {
+      final provider = Provider.of<AssessmentProvider>(context, listen: false);
+      provider.updateCurrentRoutine(selectedCurrentRoutine!);
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AnalyzeAssessment()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,12 +77,7 @@ class _CurrentSkincareRoutineState extends State<CurrentSkincareRoutine> {
 
         actions: [
           TextButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const AnalyzeAssessment()),
-              );
-            },
+            onPressed: _skip,
             child: const Text(
               'Skip',
               style: TextStyle(
@@ -51,6 +92,36 @@ class _CurrentSkincareRoutineState extends State<CurrentSkincareRoutine> {
       body: SafeArea(
         child: Column(
           children: [
+
+            Padding(
+              padding: const EdgeInsets.only(left: 24, right: 24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Question $currentAssessmentQuestion of $totalAssessmentQuestion',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Colors.black,
+                      fontWeight: FontWeight.normal,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: LinearProgressIndicator(
+                      value: currentAssessmentQuestion / totalAssessmentQuestion,
+                      backgroundColor: Colors.teal.shade50,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Colors.teal.shade500,
+                      ),
+                      minHeight: 8,
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
             Expanded(
               child: SingleChildScrollView(
@@ -87,40 +158,40 @@ class _CurrentSkincareRoutineState extends State<CurrentSkincareRoutine> {
                     const SizedBox(height: 20),
                     CurrentSkincareRoutineOption(
                       label: 'No routine',
-                      isSelected: selectedAgeRange == 'no_routine',
-                      onTap: () => setState(() => selectedAgeRange = 'no_routine'),
+                      isSelected: selectedCurrentRoutine == 'no_routine',
+                      onTap: () => setState(() => selectedCurrentRoutine = 'no_routine'),
                     ),
 
                     const SizedBox(height: 16),
 
                     CurrentSkincareRoutineOption(
                       label: 'Basic (cleanser + moisturizer)',
-                      isSelected: selectedAgeRange == 'basic',
-                      onTap: () => setState(() => selectedAgeRange = 'basic'),
+                      isSelected: selectedCurrentRoutine == 'basic',
+                      onTap: () => setState(() => selectedCurrentRoutine = 'basic'),
                     ),
 
                     const SizedBox(height: 16),
 
                     CurrentSkincareRoutineOption(
                       label: 'Moderate (3-5 products)',
-                      isSelected: selectedAgeRange == 'moderate',
-                      onTap: () => setState(() => selectedAgeRange = 'moderate'),
+                      isSelected: selectedCurrentRoutine == 'moderate',
+                      onTap: () => setState(() => selectedCurrentRoutine = 'moderate'),
                     ),
 
                     const SizedBox(height: 16),
 
                     CurrentSkincareRoutineOption(
                       label: 'Extensive (6+ products)',
-                      isSelected: selectedAgeRange == 'extensive',
-                      onTap: () => setState(() => selectedAgeRange = 'extensive'),
+                      isSelected: selectedCurrentRoutine == 'extensive',
+                      onTap: () => setState(() => selectedCurrentRoutine = 'extensive'),
                     ),
 
                     const SizedBox(height: 16),
 
                     AgeOption(
                       label: 'Prefer not to say',
-                      isSelected: selectedAgeRange == 'prefer_not_to_say',
-                      onTap: () => setState(() => selectedAgeRange = 'prefer_not_to_say'),
+                      isSelected: selectedCurrentRoutine == 'prefer_not_to_say',
+                      onTap: () => setState(() => selectedCurrentRoutine = 'prefer_not_to_say'),
                     ),
 
                   ],
@@ -136,10 +207,10 @@ class _CurrentSkincareRoutineState extends State<CurrentSkincareRoutine> {
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton(
-                      onPressed: () {
-                        selectedAgeRange != null ? () {} : null;},
+                      onPressed: selectedCurrentRoutine != null ? _saveAndContinue : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.cyan,
+                        backgroundColor: Colors.teal[500],
+                        // backgroundColor: Colors.cyan,
                         foregroundColor: Colors.white,
                         disabledBackgroundColor: const Color(0xFFD8D6E8),
                         shape: RoundedRectangleBorder(
