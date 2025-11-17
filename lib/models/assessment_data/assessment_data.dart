@@ -1,12 +1,12 @@
 
-class AssessmentData {
+class AssessmentModel {
   String? gender;
   String? ageRange;
   String? skinType;
   Set<String>? skinConcerns;
   String? currentRoutine;
 
-  AssessmentData({
+  AssessmentModel({
     this.gender,
     this.ageRange,
     this.skinType,
@@ -26,8 +26,8 @@ class AssessmentData {
   }
 
   // factory method to receive data
-  factory AssessmentData.fromJson(Map<String, dynamic> json) {
-    return AssessmentData(
+  factory AssessmentModel.fromJson(Map<String, dynamic> json) {
+    return AssessmentModel(
       gender: json['gender'] ?? '',
       ageRange: json['ageRange'] ?? '',
       skinType: json['skinType'] ?? '',
@@ -50,7 +50,7 @@ class AssessmentData {
   }
 
   // Create a copy with updated fields
-  AssessmentData copyWith({
+  AssessmentModel copyWith({
     String? gender,
     String? ageRange,
     String? skinType,
@@ -58,7 +58,7 @@ class AssessmentData {
     String? skinSensitivity,
     String? currentRoutine,
   }) {
-    return AssessmentData(
+    return AssessmentModel(
       gender: gender ?? this.gender,
       ageRange: ageRange ?? this.ageRange,
       skinType: skinType ?? this.skinType,
