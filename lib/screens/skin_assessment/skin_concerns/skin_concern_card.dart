@@ -27,6 +27,7 @@ class SkinConcernCard extends StatelessWidget {
           border: Border.all(
             color: isSelected
                 ? Colors.teal
+                // ? const Color(0x71B8B3E8)
                 : Colors.transparent,
             width: 1,
           ),
@@ -51,12 +52,14 @@ class SkinConcernCard extends StatelessWidget {
                 border: Border.all(
                   color: isSelected
                       ? Colors.teal
+                      // ? const Color(0x71B8B3E8)
                       : const Color(0xFFD0D0D0),
                   width: 2,
                 ),
 
                 color: isSelected
                     ? Colors.teal
+                    // ? const Color(0x71B8B3E8)
                     : Colors.white,
               ),
 
