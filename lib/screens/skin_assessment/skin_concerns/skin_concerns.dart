@@ -18,7 +18,7 @@ class _SkinConcernsState extends State<SkinConcerns> {
 
   final List<String> concerns = [
     'Acne',
-    'Dark Spots'
+    'Dark Spots',
     'Anti-aging',
     'Hydration',
     'Hyperpigmentation',
@@ -34,7 +34,8 @@ class _SkinConcernsState extends State<SkinConcerns> {
     'Dark Circles',
     'Large Pores',
     'Dullness',
-    'Uneven texture'
+    'Uneven texture',
+    'Other'
   ];
 
   Set<String>? selectedSkinConcerns = {};
@@ -168,7 +169,7 @@ class _SkinConcernsState extends State<SkinConcerns> {
                       const SizedBox(height: 12),
 
                       const Text(
-                        'Select up to 3. This will help us tailor the best skincare for you.',
+                        'Select up to 5. This will help us tailor the best skincare for you.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                             fontSize: 16,
@@ -222,7 +223,7 @@ class _SkinConcernsState extends State<SkinConcerns> {
                     child: ElevatedButton(
                       onPressed: selectedSkinConcerns!.isNotEmpty ?_saveAndContinue : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.teal,
+                        backgroundColor: Colors.teal[500],
                         foregroundColor: Colors.white,
                         disabledBackgroundColor: const Color(0xFFD8D6E8),
                         shape: RoundedRectangleBorder(
