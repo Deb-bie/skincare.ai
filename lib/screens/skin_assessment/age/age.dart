@@ -45,6 +45,7 @@ class _AgeState extends State<Age> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const SkinType()),
+      //   MaterialPageRoute(builder: (context) => const Home())
     );
   }
 
@@ -63,14 +64,17 @@ class _AgeState extends State<Age> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: theme.scaffoldBackgroundColor,
 
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: theme.iconTheme.color),
           onPressed: () {
             Navigator.pop(context);
           },
@@ -79,10 +83,10 @@ class _AgeState extends State<Age> {
         actions: [
           TextButton(
             onPressed: _skip,
-            child: const Text(
+            child: Text(
               'Skip',
               style: TextStyle(
-                  color: Colors.black,
+                  color: colorScheme.onSurface,
                   fontFamily: "Poppins"
               ),
             ),
@@ -93,6 +97,7 @@ class _AgeState extends State<Age> {
       body: SafeArea(
         child: Column(
           children: [
+
             Padding(
               padding: const EdgeInsets.only(left: 24, right: 24.0),
               child: Column(
@@ -100,21 +105,23 @@ class _AgeState extends State<Age> {
                 children: [
                   Text(
                     'Question $currentAssessmentQuestion of $totalAssessmentQuestion',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
-                      color: Colors.black,
+                      color: colorScheme.onSurface,
                       fontWeight: FontWeight.normal,
                       fontFamily: 'Poppins',
                     ),
                   ),
+
                   const SizedBox(height: 12),
+
                   ClipRRect(
                     borderRadius: BorderRadius.circular(10),
                     child: LinearProgressIndicator(
                       value: currentAssessmentQuestion / totalAssessmentQuestion,
-                      backgroundColor: Colors.teal.shade50,
+                      backgroundColor: colorScheme.primary.withOpacity(0.2),
                       valueColor: AlwaysStoppedAnimation<Color>(
-                        Colors.teal.shade500,
+                        colorScheme.primary,
                       ),
                       minHeight: 8,
                     ),
@@ -132,13 +139,9 @@ class _AgeState extends State<Age> {
                   children: [
 
                     Center(
-                      child: const Text(
+                      child: Text(
                         "What's your age range",
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: "Poppins",
-                          color: Colors.black,
+                        style: theme.textTheme.displayMedium?.copyWith(
                           height: 1.2,
                         ),
                       ),
@@ -149,10 +152,8 @@ class _AgeState extends State<Age> {
                     Text(
                       "Your age helps us to personalize your experience.",
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: theme.textTheme.bodyMedium?.copyWith(
                         fontSize: 16,
-                        color: Colors.grey,
-                        fontFamily: "Poppins",
                         height: 1.5,
                       ),
                     ),
@@ -226,17 +227,7 @@ class _AgeState extends State<Age> {
                     height: 56,
                     child: ElevatedButton(
                       onPressed: selectedAgeRange != null ? _saveAndContinue : null,
-                      style: ElevatedButton.styleFrom(
-                        // backgroundColor: Colors.cyan,
-                        backgroundColor: Colors.teal[500],
-                        foregroundColor: Colors.white,
-                        disabledBackgroundColor: const Color(0xFFD8D6E8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(28),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: const Text(
+                      child: Text(
                         'Continue',
                         style: TextStyle(
                             fontSize: 17,
