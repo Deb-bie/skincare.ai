@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:myskiin/screens/products/product_search.dart';
 import '../../models/product/product_model.dart';
 import '../../services/product/product_service.dart';
 import '../product_details/product_details.dart';
@@ -17,9 +18,7 @@ class _DiscoverProductState extends State<DiscoverProduct> {
   final ProductService _productService = ProductService();
   late final String category = widget.category;
   bool isLoading = true;
-
   int selectedCategory = 0;
-  // final categories = ['All', 'Foaming', 'Gel', 'Oil-based', 'Cream'];
   String searchQuery = '';
   var all = [];
 
@@ -35,22 +34,13 @@ class _DiscoverProductState extends State<DiscoverProduct> {
         all = allProducts;
         isLoading = false;
       });
-      print(all.length);
     } catch (e) {
       setState(() {
         isLoading = false;
       });
-      print('Error loading products: $e');
     }
 
   }
-
-  @override
-  void initState() {
-    super.initState();
-    _getAllProducts(widget.category);
-  }
-
 
   void _openSearch() {
     showSearch(
@@ -65,12 +55,6 @@ class _DiscoverProductState extends State<DiscoverProduct> {
 
   List<dynamic> get filteredProducts {
     var products = all;
-
-    // Filter by category
-    // if (selectedCategory != 0) {
-    //   final category = categories[selectedCategory];
-    //   products = products.where((p) => p.tags.contains(category)).toList();
-    // }
 
     // Filter by search query
     if (searchQuery.isNotEmpty) {
@@ -87,6 +71,13 @@ class _DiscoverProductState extends State<DiscoverProduct> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _getAllProducts(widget.category);
+  }
+
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -98,6 +89,7 @@ class _DiscoverProductState extends State<DiscoverProduct> {
       appBar: AppBar(
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
+
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: theme.iconTheme.color),
           onPressed: () {
@@ -133,7 +125,7 @@ class _DiscoverProductState extends State<DiscoverProduct> {
 
             // Browse Products Section
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: const Text(
                 'Browse Products',
                 style: TextStyle(
@@ -145,68 +137,21 @@ class _DiscoverProductState extends State<DiscoverProduct> {
               ),
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
 
-            // // Category Pills
-            // SizedBox(
-            //   height: 40,
-            //   child: ListView.builder(
-            //     scrollDirection: Axis.horizontal,
-            //     padding: const EdgeInsets.symmetric(horizontal: 16),
-            //     itemCount: categories.length,
-            //     itemBuilder: (context, index) {
-            //       final isSelected = selectedCategory == index;
-            //
-            //       return Padding(
-            //         padding: const EdgeInsets.only(right: 8),
-            //         child: FilterChip(
-            //           label: Text(
-            //               categories[index],
-            //             style: TextStyle(
-            //                 fontFamily: 'Poppins',
-            //                 letterSpacing: 1
-            //             ),
-            //           ),
-            //           selected: isSelected,
-            //           onSelected: (selected) {
-            //             setState(() {
-            //               selectedCategory = index;
-            //             });
-            //           },
-            //
-            //           backgroundColor: isDark ? Colors.grey.shade300 : Colors.white,
-            //           selectedColor: Colors.cyan,
-            //           labelStyle: TextStyle(
-            //             color: isSelected ? Colors.white : Colors.black,
-            //             fontWeight: FontWeight.w500,
-            //               fontFamily: 'Poppins',
-            //               letterSpacing: 1
-            //           ),
-            //
-            //           shape: RoundedRectangleBorder(
-            //             borderRadius: BorderRadius.circular(20),
-            //             side: BorderSide(
-            //               color: isSelected ? Colors.cyan : Colors.grey[300]!,
-            //             ),
-            //           ),
-            //         ),
-            //       );
-            //     },
-            //   ),
-            // ),
-            //
-            // const SizedBox(height: 16),
 
             // Product Cards
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
                   if (searchQuery.isNotEmpty)
+
                     Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: Row(
                         children: [
+
                           Text(
                             'Results for "$searchQuery"',
                             style: TextStyle(
@@ -281,7 +226,7 @@ class _DiscoverProductState extends State<DiscoverProduct> {
                           product
                         ),
                       );
-                    }).toList(),
+                    }),
                 ],
               ),
             ),
@@ -305,19 +250,20 @@ class _DiscoverProductState extends State<DiscoverProduct> {
           MaterialPageRoute(builder: (context) => ProductDetailsPage(product: product)),
         );
       },
+
       child: Container(
         decoration: BoxDecoration(
           color: isDark ? theme.cardTheme.color : Colors.white,
           borderRadius: BorderRadius.circular(16),
-
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
           ],
         ),
+
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -329,7 +275,7 @@ class _DiscoverProductState extends State<DiscoverProduct> {
                   height: 200,
                   decoration: BoxDecoration(
                     borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(16),
+                      top: Radius.circular(32),
                     ),
                   ),
 
@@ -338,12 +284,10 @@ class _DiscoverProductState extends State<DiscoverProduct> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(40),
                       ),
-
                       child: Padding(
                         padding: const EdgeInsets.all(0.0),
                         child: Image.network(
                           width: double.infinity,
-                          // height: 50,
                           product.image!,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
@@ -357,7 +301,6 @@ class _DiscoverProductState extends State<DiscoverProduct> {
                     ),
                   ),
                 ),
-
               ],
             ),
 
@@ -368,6 +311,8 @@ class _DiscoverProductState extends State<DiscoverProduct> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+
+                  // brand name
                   Row(
                     children: [
                       Container(
@@ -394,9 +339,9 @@ class _DiscoverProductState extends State<DiscoverProduct> {
                     ],
                   ),
 
-
                   const SizedBox(height: 8),
 
+                  // product name
                   Text(
                     product.name,
                     style: const TextStyle(
@@ -409,6 +354,7 @@ class _DiscoverProductState extends State<DiscoverProduct> {
 
                   const SizedBox(height: 8),
 
+                  // sub titles
                   Text(
                     product.subtitle!,
                     style: TextStyle(
@@ -422,7 +368,9 @@ class _DiscoverProductState extends State<DiscoverProduct> {
 
                   const SizedBox(height: 16),
 
-                  SizedBox(
+                  // skin types
+                  if (product.skinType != [])
+                    SizedBox(
                     height: 28,
                     child: ListView(
                       scrollDirection: Axis.horizontal,
@@ -434,7 +382,9 @@ class _DiscoverProductState extends State<DiscoverProduct> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: isDark ? Colors.blue.shade600.withOpacity(0.2) : Colors.blue.shade50,
+                            color: isDark
+                                ? Colors.blue.shade600.withValues(alpha: 0.2)
+                                : Colors.blue.shade50,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
@@ -451,7 +401,8 @@ class _DiscoverProductState extends State<DiscoverProduct> {
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  if (product.skinType != [])
+                    const SizedBox(height: 24),
 
                   SizedBox(
                     width: double.infinity,
@@ -462,7 +413,9 @@ class _DiscoverProductState extends State<DiscoverProduct> {
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isDark ? Color(0xFFFF9B7A).withOpacity(0.9) : Color(0xFFFF9B7A),
+                        backgroundColor: isDark
+                            ? Color(0xFFFF9B7A).withValues(alpha: 0.9)
+                            : Color(0xFFFF9B7A),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
@@ -470,6 +423,7 @@ class _DiscoverProductState extends State<DiscoverProduct> {
                         ),
                         elevation: 0,
                       ),
+
                       child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -500,166 +454,3 @@ class _DiscoverProductState extends State<DiscoverProduct> {
   }
 }
 
-class ProductSearchDelegate extends SearchDelegate<String> {
-  final List<dynamic> products;
-  final Function(String) onQueryChanged;
-
-  ProductSearchDelegate(this.products, this.onQueryChanged);
-
-  @override
-  List<Widget> buildActions(BuildContext context) {
-    return [
-      if (query.isNotEmpty)
-        IconButton(
-          icon: const Icon(Icons.clear),
-          onPressed: () {
-            query = '';
-            onQueryChanged('');
-          },
-        ),
-    ];
-  }
-
-  @override
-  Widget buildLeading(BuildContext context) {
-    return IconButton(
-      icon: const Icon(Icons.arrow_back),
-      onPressed: () {
-        close(context, '');
-      },
-    );
-  }
-
-  List<dynamic> _filterProducts(String searchQuery) {
-    if (searchQuery.isEmpty) {
-      return products;
-    }
-
-    return products.where((p) {
-      final name = p.name.toLowerCase();
-      final brand = p.brandName.toLowerCase();
-      final description = p.description.toString().toLowerCase();
-      final query = searchQuery.toLowerCase();
-      return name.contains(query) || brand.contains(query) || description.contains(query);
-    }).toList();
-  }
-
-  @override
-  Widget buildResults(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      onQueryChanged(query);
-    });
-
-    final results = _filterProducts(query);
-
-    if (query.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.search, size: 64, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            Text(
-              'Type to search for products',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-                  fontFamily: 'Poppins',
-                  letterSpacing: 1
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (results.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.search_off, size: 64, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            Text(
-              'No products found for "$query"',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-                  fontFamily: 'Poppins',
-                  letterSpacing: 1
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: results.length,
-      itemBuilder: (context, index) {
-        final product = results[index];
-
-        return Card(
-          margin: const EdgeInsets.only(bottom: 16),
-          child: ListTile(
-            contentPadding: const EdgeInsets.all(12),
-
-            leading: Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(25),
-              ),
-              child: Image.network(
-                product.image!,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  return Icon(
-                    Icons.water_drop,
-                    color: const Color(0xFF4FC3DC),
-                  );
-                }, ),
-            ),
-
-            title: Text(
-              product.name,
-              style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Poppins',
-                  letterSpacing: 1
-              ),
-            ),
-
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 8),
-                Text(
-                  product.brandName,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                      fontFamily: 'Poppins',
-                      letterSpacing: 1
-                  ),
-                ),
-
-                const SizedBox(height: 4),
-
-              ],
-            ),
-            onTap: () {
-              close(context, product.name);
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  @override
-  Widget buildSuggestions(BuildContext context) {
-    return buildResults(context);
-  }
-}
