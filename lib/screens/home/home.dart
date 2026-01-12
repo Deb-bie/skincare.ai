@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:myskiin/screens/product_details/product_details.dart';
-import 'package:myskiin/screens/profile/profile_page.dart';
-import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
+import 'package:myskiin/screens/products/discover_product.dart';
+import 'package:myskiin/screens/settings/settings_page.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/utils/utils.dart';
 import '../../enums/day_of_week.dart';
 import '../../enums/routine_type.dart';
 import '../../models/product/product_model.dart';
 import '../../providers/routine_provider.dart';
+import '../../services/data_manager/hive_models/user/hive_user_model.dart';
+import '../product_details/product_details.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -20,8 +21,6 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  late PersistentTabController _controller;
-  int _selectedBottomNav = 0;
   String username = "";
 
   String _getGreeting() {
@@ -36,12 +35,10 @@ class _HomeState extends State<Home> {
   }
 
   Future<void> _getUsername() async {
-    final prefs = await SharedPreferences.getInstance();
-    final user = prefs.getString('_user');
-    print("user in home: $user");
-
+    final userBox = Hive.box<HiveUserModel>('users');
+    final user = userBox.get('currentUser');
     if (user != null) {
-      username = user;
+      username = user.username!;
     }
   }
 
@@ -74,98 +71,100 @@ class _HomeState extends State<Home> {
     return '$weekday, $month ${now.day}';
   }
 
+
   @override
   void initState() {
     super.initState();
     _getUsername();
   }
 
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     final routineProvider = Provider.of<RoutineProvider>(context);
     final currentDay = _getCurrentDayOfWeek();
     final today = DateTime.now();
 
-    // Get routines with products organized by category
     final morningRoutine = routineProvider.getDayRoutine(currentDay, RoutineType.morning);
     final eveningRoutine = routineProvider.getDayRoutine(currentDay, RoutineType.evening);
 
-    // Get products organized by category
     final morningProductsByCategory = morningRoutine?.stepsWithProducts ?? {};
     final eveningProductsByCategory = eveningRoutine?.stepsWithProducts ?? {};
 
-    // Get completion data
     final morningCompleted = routineProvider.getCompletedSteps(today, RoutineType.morning);
     final morningTotal = routineProvider.getTotalSteps(today, RoutineType.morning);
     final eveningCompleted = routineProvider.getCompletedSteps(today, RoutineType.evening);
     final eveningTotal = routineProvider.getTotalSteps(today, RoutineType.evening);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: theme.scaffoldBackgroundColor,
 
       body: SafeArea(
-        child:
-        SingleChildScrollView(
+        child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
 
               // Header
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+
+                    Text(
                       'mySkiin',
-                      style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 22,
-                          fontWeight: FontWeight.normal,
-                          fontFamily: 'Poppins',
-                          letterSpacing: 2
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontSize: 28,
+                        fontWeight: FontWeight.normal,
+                        letterSpacing: 3,
                       ),
                     ),
 
                     GestureDetector(
                       onTap: () {
-                        Navigator.push(context,
-                          MaterialPageRoute(builder: (context) => ProfilePage(controller: _controller)),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => SettingsPage()),
                         );
-                        },
+                      },
+
                       child: Container(
                         width: 30,
                         height: 30,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFFE4D6),
+                          color: isDark
+                              ? const Color(0xFFFF9B7A).withValues(alpha: 0.2)
+                              : const Color(0xFFFFE4D6),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
-                          LucideIcons.userRound,
+                          LucideIcons.settings,
                           color: Color(0xFFFF9B7A),
                           size: 20,
                         ),
                       ),
                     ),
+
                   ],
                 ),
               ),
 
-
               // Greeting
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16,12 ),
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
 
                     Text(
                       _getFormattedDate(),
-                      style: TextStyle(
+                      style: theme.textTheme.bodyMedium?.copyWith(
                         fontSize: 12,
-                        color: Colors.grey[600],
                         fontWeight: FontWeight.w500,
-                        fontFamily: "Poppins"
                       ),
                     ),
 
@@ -173,56 +172,53 @@ class _HomeState extends State<Home> {
 
                     Text(
                       '${_getGreeting()},',
-                      style: const TextStyle(
+                      style: theme.textTheme.displayMedium?.copyWith(
                         fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                          fontFamily: "Poppins",
-                        letterSpacing: 1
+                        letterSpacing: 1,
                       ),
+                      maxLines: 1,
                     ),
 
-                    // if (username != null)
+                    if (username != '')
+
                       Text(
-                        // username!,
-                        "Ken",
-                        style: const TextStyle(
+                        username[0].toUpperCase() + username.substring(1),
+                        style: theme.textTheme.displayMedium?.copyWith(
                           fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                            fontFamily: "Poppins",
-                          letterSpacing: 1
+                          letterSpacing: 1,
                         ),
                       ),
                   ],
                 ),
               ),
 
-              // const SizedBox(height: 12),
+
+              const SizedBox(height: 10),
 
               // Daily Skincare Focus
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
-                child: const Text(
+                padding: const EdgeInsets.fromLTRB(20, 6, 20, 6),
+                child: Text(
                   'Daily Skincare Focus',
-                  style: TextStyle(
-                    fontSize: 14,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    fontFamily: "Poppins",
-                    letterSpacing: 1
+                    letterSpacing: 1,
                   ),
                 ),
               ),
 
               const SizedBox(height: 10),
 
+
               // Horizontal Scrollable Routines
               SizedBox(
-                height: 280,
+                height: 290,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
                   children: [
-                    
+
                     _buildRoutineCard(
                       context,
                       'Morning Routine',
@@ -230,8 +226,9 @@ class _HomeState extends State<Home> {
                       morningCompleted,
                       morningTotal,
                       const Color(0xFFFF9B7A),
-                      Color(0xEDF6FFFF),
-                      // Colors.blue.shade50,
+                      isDark
+                          ? const Color(0xFFFF9B7A).withValues(alpha: 0.1)
+                          : const Color(0xEDF6FFFF),
                       Icons.wb_sunny,
                       RoutineType.morning,
                       today,
@@ -244,8 +241,11 @@ class _HomeState extends State<Home> {
                       eveningProductsByCategory,
                       eveningCompleted,
                       eveningTotal,
-                      const Color(0xFF9B7AFF),
-                      Colors.blue.shade100,
+                      // const Color(0xFF9B7AFF),
+                        Colors.deepPurple,
+                      isDark
+                          ? Colors.deepPurple.withValues(alpha: 0.1)
+                          : Colors.blue.shade50,
                       Icons.nightlight,
                       RoutineType.evening,
                       today,
@@ -254,17 +254,17 @@ class _HomeState extends State<Home> {
                 ),
               ),
 
-              const SizedBox(height: 24),
+
+              const SizedBox(height: 40),
 
               // Product Discovery
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                child: const Text(
+                child: Text(
                   'Product Discovery',
-                  style: TextStyle(
+                  style: theme.textTheme.headlineMedium?.copyWith(
                     fontSize: 20,
                     fontWeight: FontWeight.w600,
-                    fontFamily: "Poppins"
                   ),
                 ),
               ),
@@ -279,66 +279,176 @@ class _HomeState extends State<Home> {
                   crossAxisCount: 2,
                   mainAxisSpacing: 16,
                   crossAxisSpacing: 16,
-                  childAspectRatio: 1.3,
+                  childAspectRatio: 1.1,
                   children: [
 
-                  _buildCategoryCard(
-                    'Cleansers',
-                    'Foundational care',
-                    const Color(0xFFE3F2FD),
-                    Icons.water_drop_outlined,
-                    const Color(0xFF4FC3DC),
-                  ),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DiscoverProduct(category: "Cleanser"),
+                          ),
+                        );
+                      },
 
-                _buildCategoryCard(
-                  'Toners',
-                  'Balance & prep',
-                  const Color(0xFFE1F5FE),
-                  Icons.opacity_outlined,
-                  const Color(0xFF4FC3DC),
-                ),
-                _buildCategoryCard(
-                  'Serums',
-                  'Targeted treatment',
-                  const Color(0xFFF3E5FF),
-                  Icons.science_outlined,
-                  const Color(0xFF9B7AFF),
-                ),
-                _buildCategoryCard(
-                  'Eye Care',
-                  'Delicate area support',
-                  const Color(0xFFFFF3E0),
-                  Icons.remove_red_eye_outlined,
-                  const Color(0xFFFFB74D),
-                ),
-                _buildCategoryCard(
-                  'Moisturizers',
-                  'Hydration lock',
-                  const Color(0xFFE0F7FA),
-                  Icons.water_outlined,
-                  const Color(0xFF4FC3DC),
-                ),
-                _buildCategoryCard(
-                  'Sun Care',
-                  'Daily protection',
-                  const Color(0xFFFFF3E0),
-                  Icons.wb_sunny_outlined,
-                  const Color(0xFFFFB74D),
-                ),
-                _buildCategoryCard(
-                  'Masks',
-                  'Weekly boost',
-                  const Color(0xFFE8F5E9),
-                  Icons.face_outlined,
-                  const Color(0xFF66BB6A),
-                ),
-                _buildCategoryCard(
-                  'Exfoliants',
-                  'Skin renewal',
-                  const Color(0xFFFCE4EC),
-                  Icons.auto_awesome_outlined,
-                  const Color(0xFFEC407A),
-                ),
+                      child: _buildCategoryCard(
+                        'Cleansers',
+                        'Foundational care',
+                        isDark
+                            ? Color(0xFF4FC3DC).withValues(alpha: 0.2)
+                            : const Color(0xFFE3F2FD),
+                        Icons.water_drop_outlined,
+                        const Color(0xFF4FC3DC),
+                      ),
+                    ),
+
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DiscoverProduct(category: "Toner"),
+                          ),
+                        );
+                      },
+
+                      child: _buildCategoryCard(
+                        'Toners',
+                        'Balance & prep',
+                        isDark
+                            ? Color(0xFF4FC3DC).withValues(alpha: 0.2)
+                            : const Color(0xFFE1F5FE),
+                        Icons.opacity_outlined,
+                        const Color(0xFF4FC3DC),
+                      ),
+                    ),
+
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DiscoverProduct(category: "Serum"),
+                          ),
+                        );
+                      },
+                      child: _buildCategoryCard(
+                        'Serums',
+                        'Targeted treatment',
+                        isDark
+                            ? Color(0xFF9B7AFF).withValues(alpha: 0.2)
+                            : Color(0xFFF3E5FF),
+                        Icons.science_outlined,
+                        const Color(0xFF9B7AFF),
+                      ),
+                    ),
+
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DiscoverProduct(category: "Eye Cream"),
+                          ),
+                        );
+                      },
+
+                      child: _buildCategoryCard(
+                        'Eye Care',
+                        'Delicate area support',
+                        isDark
+                            ? Color(0xFFFFB74D).withValues(alpha: 0.2)
+                            : Color(0xFFFFF3E0),
+                        Icons.remove_red_eye_outlined,
+                        const Color(0xFFFFB74D),
+                      ),
+                    ),
+
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DiscoverProduct(category: "Moisturizer"),
+                          ),
+                        );
+                      },
+
+                      child: _buildCategoryCard(
+                        'Moisturizers',
+                        'Hydration lock',
+                        isDark
+                            ? Color(0xFF4FC3DC).withValues(alpha: 0.2)
+                            : Color(0xFFE0F7FA),
+                        Icons.water_outlined,
+                        const Color(0xFF4FC3DC),
+                      ),
+                    ),
+
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DiscoverProduct(category: "Sunscreen"),
+                          ),
+                        );
+                      },
+
+                      child: _buildCategoryCard(
+                        'Sun Care',
+                        'Daily protection',
+                        isDark
+                            ? Color(0xFFFFB74D).withValues(alpha: 0.2)
+                            : Color(0xFFFFF3E0),
+                        Icons.wb_sunny_outlined,
+                        const Color(0xFFFFB74D),
+                      ),
+                    ),
+
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DiscoverProduct(category: "Face Mask"),
+                          ),
+                        );
+                      },
+
+                      child: _buildCategoryCard(
+                        'Masks',
+                        'Weekly boost',
+                        isDark
+                            ? Color(0xFF66BB6A).withValues(alpha: 0.2)
+                            : Color(0xFFE8F5E9),
+                        Icons.face_outlined,
+                        const Color(0xFF66BB6A),
+                      ),
+                    ),
+
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DiscoverProduct(category: "Exfoliant"),
+                          ),
+                        );
+                      },
+
+                      child: _buildCategoryCard(
+                        'Exfoliants',
+                        'Skin renewal',
+                        isDark
+                            ? Color(0xFFEC407A).withValues(alpha: 0.2)
+                            : Color(0xFFFCE4EC),
+                        Icons.auto_awesome_outlined,
+                        const Color(0xFFEC407A),
+                      ),
+                    ),
+
                   ],
                 ),
               ),
@@ -348,9 +458,9 @@ class _HomeState extends State<Home> {
           ),
         ),
       ),
-
     );
   }
+
 
 
   Widget _buildRoutineCard(
@@ -365,22 +475,21 @@ class _HomeState extends State<Home> {
       RoutineType routineType,
       DateTime date,
       ) {
+
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final progress = totalSteps > 0 ? stepsComplete / totalSteps : 0.0;
     final routineProvider = Provider.of<RoutineProvider>(context, listen: false);
 
-    // Flatten products in the order they appear in the map (preserves RoutineProvider order)
-    final allProducts = productsByCategory.values
-        .expand((products) => products)
-        .toList();
+    final allProducts = productsByCategory.values.expand((products) => products).toList();
 
-    // Find the next product to display based on completion status
     ProductModel? currentProduct;
     int currentIndex = 0;
 
     for (int i = 0; i < allProducts.length; i++) {
       final product = allProducts[i];
-      final isCompleted = routineProvider.isProductCompleted(date, routineType, product.id);
-      final isSkipped = routineProvider.isProductSkipped(date, routineType, product.id);
+      final isCompleted = routineProvider.isProductCompleted(date, routineType, product.id!);
+      final isSkipped = routineProvider.isProductSkipped(date, routineType, product.id!);
 
       if (!isCompleted && !isSkipped) {
         currentProduct = product;
@@ -389,7 +498,6 @@ class _HomeState extends State<Home> {
       }
     }
 
-    // If all products are completed/skipped, show the last product
     if (currentProduct == null && allProducts.isNotEmpty) {
       currentProduct = allProducts.last;
       currentIndex = allProducts.length - 1;
@@ -402,13 +510,15 @@ class _HomeState extends State<Home> {
         gradient: LinearGradient(
           begin: Alignment.bottomLeft,
           end: Alignment.topRight,
-          colors: [Colors.white, Colors.white, colors],
+          colors: isDark
+              ? [theme.cardTheme.color!, theme.cardTheme.color!, colors]
+              : [Colors.white, Colors.white, colors],
           stops: const [0.75, 0.7, 0.0],
         ),
         borderRadius: BorderRadius.circular(25),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -421,17 +531,20 @@ class _HomeState extends State<Home> {
 
           Row(
             children: [
-              Icon(icon, color: accentColor, size: 20),
+
+              Icon(
+                  icon,
+                  color: accentColor,
+                  size: 20
+              ),
 
               const SizedBox(width: 8),
 
               Text(
                 title,
-                style: const TextStyle(
+                style: theme.textTheme.bodyLarge?.copyWith(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  fontFamily: "Poppins",
-
                 ),
               ),
             ],
@@ -455,7 +568,7 @@ class _HomeState extends State<Home> {
             borderRadius: BorderRadius.circular(8),
             child: LinearProgressIndicator(
               value: progress,
-              backgroundColor: accentColor.withOpacity(0.2),
+              backgroundColor: accentColor.withValues(alpha: 0.2),
               valueColor: AlwaysStoppedAnimation<Color>(accentColor),
               minHeight: 6,
             ),
@@ -466,83 +579,82 @@ class _HomeState extends State<Home> {
           if (currentProduct != null) ...[
             GestureDetector(
               onTap: () {
-                Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => ProductDetailsPage(product: currentProduct!)),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ProductDetailsPage(product: currentProduct!),
+                  ),
                 );
               },
+
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  // color: const Color(0xFFF8F8F8),
-                  color: Colors.grey.shade100,
+                  color: isDark ? Colors.grey[800] : Colors.grey.shade100,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.1),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
                   ],
                 ),
-              
+
                 child: Row(
                   children: [
+
                     Container(
                       width: 40,
                       height: 40,
-              
                       decoration: BoxDecoration(
-                        color: const Color(0xFF4FC3DC).withOpacity(0.2),
+                        color: const Color(0xFF4FC3DC).withValues(alpha: 0.2),
                         shape: BoxShape.circle,
                       ),
-              
+
                       child: currentProduct.image != null
                           ? ClipOval(
-                              child: Image.network(
-                                currentProduct.image!,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Icon(
-                                    Icons.water_drop,
-                                    color: const Color(0xFF4FC3DC),
-                                  );
-                                },
-                              ),
-                          )
+                        child: Image.network(
+                          currentProduct.image!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Icon(
+                              Icons.water_drop,
+                              color: const Color(0xFF4FC3DC),
+                            );
+                          },
+                        ),
+                      )
                           : Icon(
-                            Icons.water_drop,
-                            color: const Color(0xFF4FC3DC),
-                          ),
+                        Icons.water_drop,
+                        color: const Color(0xFF4FC3DC),
+                      ),
                     ),
-              
+
                     const SizedBox(width: 12),
-              
+
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-              
+
                           Text(
                             currentProduct.name,
-                            style: const TextStyle(
+                            style: theme.textTheme.bodyMedium?.copyWith(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
-                              fontFamily: "Poppins",
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
-              
+
                           const SizedBox(height: 4),
-              
-              
+
                           if (currentProduct.brandName != null)
                             Text(
                               currentProduct.brandName!,
-                              style: TextStyle(
+                              style: theme.textTheme.bodySmall?.copyWith(
                                 fontSize: 12,
-                                color: Colors.grey[600],
-                                fontFamily: "Poppins",
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -550,40 +662,35 @@ class _HomeState extends State<Home> {
                         ],
                       ),
                     ),
-              
+
                     const SizedBox(width: 12),
-              
+
                     GestureDetector(
                       onTap: () {
                         routineProvider.toggleProductCompletion(
                           date,
                           routineType,
-                          currentProduct!.id,
+                          currentProduct!.id!,
                         );
                       },
-              
+
                       child: Container(
                         width: 28,
                         height: 28,
                         decoration: BoxDecoration(
-                          color: routineProvider.isProductCompleted(date, routineType, currentProduct.id)
-                          ? accentColor
-                              : Colors.grey[300],
+                          color: routineProvider.isProductCompleted(date, routineType, currentProduct.id!)
+                              ? accentColor
+                              : (isDark ? Colors.grey[700] : Colors.grey[300]),
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: routineProvider.isProductCompleted(date, routineType, currentProduct.id)
+                            color: routineProvider.isProductCompleted(date, routineType, currentProduct.id!)
                                 ? accentColor
                                 : Colors.transparent,
                             width: 1,
                           ),
                         ),
-              
-                        child: routineProvider.isProductCompleted(date, routineType, currentProduct.id)
-                            ? const Icon(
-                                Icons.check,
-                                size: 16,
-                                color: Colors.white,
-                              )
+                        child: routineProvider.isProductCompleted(date, routineType, currentProduct.id!)
+                            ? const Icon(Icons.check, size: 16, color: Colors.white)
                             : null,
                       ),
                     ),
@@ -596,23 +703,26 @@ class _HomeState extends State<Home> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8F8F8),
+                color: isDark ? Colors.grey[800] : const Color(0xFFF8F8F8),
                 borderRadius: BorderRadius.circular(12),
               ),
+
               child: Center(
                 child: Column(
                   children: [
+
                     Icon(
                       Icons.add_circle_outline,
-                      color: Colors.grey[400],
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                       size: 32,
                     ),
+
                     const SizedBox(height: 8),
+
                     Text(
                       'Add products to your routine',
-                      style: TextStyle(
+                      style: theme.textTheme.bodySmall?.copyWith(
                         fontSize: 12,
-                        color: Colors.grey[600],
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -624,81 +734,60 @@ class _HomeState extends State<Home> {
 
           const SizedBox(height: 22),
 
-          Wrap(
-            spacing: 8, // Space between circles
-            runSpacing: 8, // Space between rows if they wrap
-            alignment: WrapAlignment.start,
-            children: List.generate(
-              allProducts.length,
-                  (index) {
+
+          SizedBox(
+            height: 36,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: allProducts.length,
+              separatorBuilder: (context, index) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
                 final product = allProducts[index];
-                final isCompleted = routineProvider.isProductCompleted(date, routineType, product.id);
-                final isSkipped = routineProvider.isProductSkipped(date, routineType, product.id);
+                final isCompleted = routineProvider.isProductCompleted(date, routineType, product.id!);
+                final isSkipped = routineProvider.isProductSkipped(date, routineType, product.id!);
                 final isCurrent = index == currentIndex;
 
-                // Calculate circle size based on number of products
-                double circleSize;
-                double iconSize;
-                if (allProducts.length <= 5) {
-                  circleSize = 36;
-                  iconSize = 18;
-                } else if (allProducts.length <= 8) {
-                  circleSize = 32;
-                  iconSize = 16;
-                } else if (allProducts.length <= 12) {
-                  circleSize = 28;
-                  iconSize = 14;
-                } else {
-                  circleSize = 24;
-                  iconSize = 12;
-                }
+                const circleSize = 36.0;
+                const iconSize = 18.0;
 
-                // Get the category icon for this product
                 final categoryIcon = getCategoryIcon(
-                    product.categoryNames?.isNotEmpty == true
-                        ? product.categoryNames!.first
-                        : null
-                );
+                    product.categoryNames?.isNotEmpty == true ? product.categoryNames!.first : null);
 
                 return Container(
                   width: circleSize,
                   height: circleSize,
                   decoration: BoxDecoration(
                     color: isCompleted
-                        ? const Color(0xFF4FC3DC).withOpacity(0.2)
+                        ? const Color(0xFF4FC3DC).withValues(alpha: 0.2)
                         : isCurrent
-                        ? accentColor.withOpacity(0.3)
-                        : Colors.grey[200],
+                        ? accentColor.withValues(alpha: 0.3)
+                        : (isDark ? Colors.grey[800] : Colors.grey[200]),
                     shape: BoxShape.circle,
-                    border: isCurrent
-                        ? Border.all(color: accentColor, width: 1)
-                        : null,
+                    border: isCurrent ? Border.all(color: accentColor, width: 1) : null,
                   ),
                   child: Icon(
                     isCompleted
                         ? Icons.check
                         : isSkipped
                         ? Icons.close
-                        : categoryIcon, // Use category-specific icon
+                        : categoryIcon,
                     size: isCompleted || isSkipped ? iconSize : iconSize * 0.9,
                     color: isCompleted
                         ? const Color(0xFF4FC3DC)
                         : isCurrent
                         ? accentColor
-                        : Colors.grey[400],
+                        : (isDark ? Colors.grey[600] : Colors.grey[400]),
                   ),
                 );
               },
             ),
           ),
 
+
         ],
       ),
-
     );
-
   }
-
 
   Widget _buildCategoryCard(
       String title,
@@ -707,26 +796,26 @@ class _HomeState extends State<Home> {
       IconData icon,
       Color iconColor,
       ) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(16),
-
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardTheme.color,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-
           Container(
             width: 48,
             height: 48,
@@ -742,21 +831,16 @@ class _HomeState extends State<Home> {
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: theme.textTheme.bodyLarge?.copyWith(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  fontFamily: "Poppins"
                 ),
               ),
-
               const SizedBox(height: 4),
-
               Text(
                 subtitle,
-                style: TextStyle(
+                style: theme.textTheme.bodySmall?.copyWith(
                   fontSize: 12,
-                  color: Colors.grey[600],
-                  fontFamily: "Poppins"
                 ),
               ),
             ],
@@ -766,117 +850,4 @@ class _HomeState extends State<Home> {
     );
   }
 
-  Widget _buildIngredientCard(
-      String name,
-      String subtitle,
-      Color color,
-      ) {
-    return Container(
-      width: 160,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey[600],
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-
-
-
-
-class _CurvedGradientPainter extends CustomPainter {
-  final Color accentColor;
-
-  _CurvedGradientPainter(this.accentColor);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    // Draw white background first
-    final whitePaint = Paint()..color = Colors.white;
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), whitePaint);
-
-    // Create curved gradient path
-    final path = Path();
-    path.moveTo(size.width * 0.4, 0); // Start from top
-    path.quadraticBezierTo(
-      size.width * 0.7, size.height * 0.3, // Control point
-      size.width, size.height * 0.6, // End point on right side
-    );
-    path.lineTo(size.width, size.height); // Bottom right
-    path.lineTo(size.width * 0.4, size.height); // Bottom left of gradient
-    path.close();
-
-    // Create radial gradient for smooth color spread
-    final gradient = RadialGradient(
-      center: Alignment.topRight,
-      radius: 1.0,
-      colors: [
-        accentColor.withOpacity(0.12),
-        accentColor.withOpacity(0.06),
-        accentColor.withOpacity(0.02),
-        Colors.transparent,
-      ],
-      stops: const [0.0, 0.4, 0.7, 1.0],
-    );
-
-    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
-    final paint = Paint()
-      ..shader = gradient.createShader(rect)
-      ..style = PaintingStyle.fill;
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(_CurvedGradientPainter oldDelegate) {
-    return oldDelegate.accentColor != accentColor;
-  }
 }
