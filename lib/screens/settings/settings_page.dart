@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:myskiin/screens/manage_reminders/manage_reminders.dart';
 import 'package:myskiin/screens/settings/privacy_policy.dart';
 import 'package:myskiin/screens/settings/terms_of_service.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
+import 'package:provider/provider.dart';
 
+import '../../providers/theme_provider.dart';
 import 'about_us.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -13,14 +14,17 @@ class SettingsPage extends StatefulWidget {
   State<SettingsPage> createState() => _SettingsPageState();
 }
 
+
 class _SettingsPageState extends State<SettingsPage> {
-  bool _notificationsEnabled = false;
-  bool _darkModeEnabled = true;
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: theme.scaffoldBackgroundColor,
 
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -28,22 +32,20 @@ class _SettingsPageState extends State<SettingsPage> {
 
         leading: IconButton(
           icon: Icon(
-              Icons.arrow_back,
-              color: Colors.grey.shade600
+            Icons.arrow_back,
+            color: theme.iconTheme.color,
           ),
           onPressed: () {
             Navigator.pop(context);
           },
         ),
 
-        title: const Text(
+        title: Text(
           'Settings',
-          style: TextStyle(
-            color: Colors.black,
+          style: theme.textTheme.bodyLarge?.copyWith(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            fontFamily: "Poppins",
-            letterSpacing: 1
+            letterSpacing: 1,
           ),
         ),
         centerTitle: true,
@@ -57,74 +59,45 @@ class _SettingsPageState extends State<SettingsPage> {
 
             // PREFERENCES Section
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
                 'PREFERENCES',
-                style: TextStyle(
-                  color: Colors.grey[500],
+                style: theme.textTheme.bodyMedium?.copyWith(
                   fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
-                    fontFamily: "Poppins"
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 2,
+                  fontFamily: "Poppins"
                 ),
               ),
             ),
 
+            const SizedBox(height: 10),
 
-            // NOTIFICATIONS
-            _buildSwitchItem(
-              title: 'Notifications',
-              value: _notificationsEnabled,
-              onChanged: (value) {
-                setState(() {
-                  _notificationsEnabled = value;
-                });
-              },
-            ),
-
-            // REMINDERS
-            _buildMenuItem(
-              title: 'Manage Reminders',
-              onTap: () {
-                PersistentNavBarNavigator.pushNewScreen(
-                  context,
-                  screen: ManageReminders(),
-                  withNavBar: true,
-                  pageTransitionAnimation: PageTransitionAnimation.cupertino,
-                );
-              },
-            ),
-
-            // _buildDivider(),
-
+            // DARK MODE
             _buildSwitchItem(
               title: 'Dark Mode',
-              value: _darkModeEnabled,
+              value: isDark,
               onChanged: (value) {
-                setState(() {
-                  _darkModeEnabled = value;
-                });
+                themeProvider.setThemeMode(value ? ThemeMode.dark : ThemeMode.light);
               },
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 48),
 
             // LEGAL Section
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
                 'LEGAL',
-                style: TextStyle(
-                  color: Colors.grey[500],
+                style: theme.textTheme.bodyMedium?.copyWith(
                   fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
-                    fontFamily: "Poppins"
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 2,
                 ),
               ),
             ),
 
-            // const SizedBox(height: 10),
+            const SizedBox(height: 10),
 
             _buildMenuItem(
               title: 'Privacy Policy',
@@ -150,23 +123,23 @@ class _SettingsPageState extends State<SettingsPage> {
               },
             ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: 48),
 
             // ABOUT Section
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
                 'ABOUT',
-                style: TextStyle(
-                  color: Colors.grey[500],
+                style: theme.textTheme.bodyMedium?.copyWith(
                   fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
-                    fontFamily: "Poppins"
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 2,
+                  fontFamily: "Poppins"
                 ),
               ),
             ),
 
+            const SizedBox(height: 10),
 
             _buildMenuItem(
               title: 'About Us',
@@ -184,7 +157,6 @@ class _SettingsPageState extends State<SettingsPage> {
           ],
         ),
       ),
-
     );
   }
 
@@ -192,27 +164,30 @@ class _SettingsPageState extends State<SettingsPage> {
     required String title,
     required VoidCallback onTap,
   }) {
+    final theme = Theme.of(context);
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+
               Text(
                 title,
-                style: const TextStyle(
-                  color: Colors.black,
+                style: theme.textTheme.bodyLarge?.copyWith(
                   fontSize: 15,
                   fontWeight: FontWeight.normal,
-                    fontFamily: "Poppins"
                 ),
               ),
+
               Icon(
                 Icons.chevron_right,
-                color: Colors.grey[600],
+                color: theme.iconTheme.color,
                 size: 24,
               ),
             ],
@@ -222,46 +197,44 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+
+
   Widget _buildSwitchItem({
     required String title,
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+
           Text(
             title,
-            style: const TextStyle(
-              color: Colors.black,
+            style: theme.textTheme.bodyLarge?.copyWith(
               fontSize: 15,
               fontWeight: FontWeight.w400,
-                fontFamily: "Poppins"
             ),
           ),
+
           Switch(
             value: value,
             onChanged: onChanged,
-            activeThumbColor: Colors.teal[600],
-            activeTrackColor: Colors.teal[100],
-            inactiveThumbColor: Colors.grey[300],
-            inactiveTrackColor: Colors.grey[600],
+            activeThumbColor: theme.primaryColor,
+            activeTrackColor: theme.primaryColor.withValues(alpha: 0.5),
+            inactiveThumbColor: isDark ? Colors.grey[600] : Colors.grey[400],
+            inactiveTrackColor: isDark
+                ? Colors.grey[800]!.withValues(alpha: 0.5)
+                : Colors.grey[300]!.withValues(alpha: 0.5),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildDivider() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Divider(
-        color: Colors.grey[800],
-        height: 1,
-        thickness: 1,
-      ),
-    );
-  }
 }
+
