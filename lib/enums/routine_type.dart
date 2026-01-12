@@ -1,0 +1,4 @@
+enum RoutineType {
+  morning,
+  evening
+}
