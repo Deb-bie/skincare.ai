@@ -14,7 +14,7 @@ class RoutineCompletion {
     required this.date,
     required this.type,
     required this.completedProductIds,
-    this.skippedProductIds = const {}, // Add this parameter
+    this.skippedProductIds = const {},
     this.completedAt,
     required this.totalProducts,
   });
@@ -41,7 +41,7 @@ class RoutineCompletion {
     'date': date.toIso8601String(),
     'type': type.name,
     'completedProductIds': completedProductIds.toList(),
-    'skippedProductIds': skippedProductIds.toList(), // Add this
+    'skippedProductIds': skippedProductIds.toList(),
     'completedAt': completedAt?.toIso8601String(),
     'totalProducts': totalProducts,
   };
@@ -52,7 +52,7 @@ class RoutineCompletion {
       date: DateTime.parse(json['date']),
       type: RoutineType.values.firstWhere((e) => e.name == json['type']),
       completedProductIds: Set<String>.from(json['completedProductIds']),
-      skippedProductIds: Set<String>.from(json['skippedProductIds'] ?? []), // Add this
+      skippedProductIds: Set<String>.from(json['skippedProductIds'] ?? []),
       completedAt: json['completedAt'] != null
           ? DateTime.parse(json['completedAt'])
           : null,
@@ -65,7 +65,7 @@ class RoutineCompletion {
     DateTime? date,
     RoutineType? type,
     Set<String>? completedProductIds,
-    Set<String>? skippedProductIds, // Add this
+    Set<String>? skippedProductIds,
     DateTime? completedAt,
     int? totalProducts,
   }) {
@@ -74,7 +74,7 @@ class RoutineCompletion {
       date: date ?? this.date,
       type: type ?? this.type,
       completedProductIds: completedProductIds ?? this.completedProductIds,
-      skippedProductIds: skippedProductIds ?? this.skippedProductIds, // Add this
+      skippedProductIds: skippedProductIds ?? this.skippedProductIds,
       completedAt: completedAt ?? this.completedAt,
       totalProducts: totalProducts ?? this.totalProducts,
     );
