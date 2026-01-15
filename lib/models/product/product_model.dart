@@ -1,73 +1,99 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class ProductModel {
-  final String id;
+  final String? id;
   final String name;
-  final String subtitle;
-  final String brand;
-  final String description;
-  final String image;
-  final Set<String> tags;
-  final Set<String> skinTypes;
-  final Set<String> keyIngredients;
-  final Set<String> category;
-  final List<String> steps;
+  final String? subtitle;
+  final String? brandId;
+  final String? brandName;
+  final List<String>? categoryId;
+  final List<String>? categoryNames;
+  final String? description;
+  final String? image;
+  final List<String>? tags;
+  final List<String>? skinType;
+  final List<String>? keyIngredients;
+  final String? steps;
+  final bool? isCrueltyFree;
+  final bool? isFragranceFree;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
 
   ProductModel({
-    required this.id,
+    this.id,
     required this.name,
-    required this.subtitle,
-    required this.brand,
-    required this.description,
-    required this.image,
-    this.tags = const {},
-    this.skinTypes = const {},
-    this.keyIngredients = const {},
-    this.category = const {},
-    this.steps = const []
+    this.subtitle,
+    this.brandId,
+    this.brandName,
+    this.categoryId = const [],
+    this.categoryNames = const [],
+    this.description,
+    this.image,
+    this.tags = const [],
+    this.skinType = const [],
+    this.keyIngredients = const [],
+    this.steps,
+    this.isCrueltyFree,
+    this.isFragranceFree,
+    this.createdAt,
+    this.updatedAt
   });
 
 
-//   factory method to receive json data
+  factory ProductModel.fromFirestore(DocumentSnapshot doc) {
+    final json = doc.data() as Map<String, dynamic>;
+
+    return ProductModel.fromJson({
+      ...json,
+      'id': doc.id,
+    });
+  }
+
+
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     return ProductModel(
-        id: json['id'] ?? '',
-        name: json['name'] ?? '',
-        subtitle: json['subtitle'] ?? '',
-        brand: json['brand'] ?? '',
-        description: json['description'] ?? '',
-        image: json['image'] ?? '',
-        tags: json['tags'] != null
-            ? Set<String>.from(json['tags'])
-            : {},
-        skinTypes: json['skinTypes'] != null
-            ? Set<String>.from(json['skinTypes'])
-            : {},
-        keyIngredients: json['keyIngredients'] != null
-            ? Set<String>.from(json['keyIngredients'])
-            : {},
-        category: json['category'] != null
-            ? Set<String>.from(json['category'])
-            : {},
-        steps: json['steps'] != null
-            ? List<String>.from(json['steps'])
-            : []
+      id: json['id'] ?? '',
+      name: json['name'] ?? '',
+      subtitle: json['subtitle'] ?? '',
+      brandId: json['brandId'] ?? '',
+      brandName: json['brandName'] ?? '',
+      categoryId: List<String>.from(json['categoryId'] ?? []),
+      categoryNames: List<String>.from(json['categoryNames'] ?? []),
+      description: json['description'] ?? '',
+      steps: json['steps'] ?? '',
+      image: json['image'] ?? '',
+      tags: List<String>.from(json['tags'] ?? []),
+      skinType: List<String>.from(json['skinType'] ?? []),
+      keyIngredients: List<String>.from(json['keyIngredients'] ?? []),
+      isCrueltyFree: json['isCrueltyFree'],
+      isFragranceFree: json['isFragranceFree'],
+      createdAt: parseDate(json['createdAt']),
+      updatedAt: parseDate(json['updatedAt']),
     );
   }
 
 
-  // for sending data
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'name': name,
       'subtitle': subtitle,
-      'brand': brand,
+      'brandId': brandId,
+      'brandName': brandName,
+      'categoryId': categoryId?.toList(),
+      'categoryNames': categoryNames?.toList(),
       'description': description,
       'image': image,
-      'tags': tags.toList(),
-      'skinTypes': skinTypes.toList(),
-      'keyIngredients': keyIngredients.toList(),
-      'category': category.toList(),
-      'steps': steps.toList()
+      'tags': tags?.toList(),
+      'skinType': skinType?.toList(),
+      'keyIngredients': keyIngredients?.toList(),
+      'steps': steps,
+      'isCrueltyFree': isCrueltyFree,
+      'isFragranceFree': isFragranceFree,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt
     };
   }
 
@@ -76,29 +102,93 @@ class ProductModel {
   ProductModel copyWith({
     String? name,
     String? subtitle,
-    String? brand,
+    String? brandId,
+    String? brandName,
+    List<String>? categoryId,
+    List<String>? categoryNames,
     String? description,
     String? image,
-    Set<String>? tags,
-    Set<String>? skinTypes,
-    Set<String>? keyIngredients,
-    Set<String>? category,
-    List<String>? steps
+    List<String>? tags,
+    List<String>? skinType,
+    List<String>? keyIngredients,
+    String? steps,
+    bool? isCrueltyFree,
+    bool? isFragranceFree,
+    DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return ProductModel(
         id: id,
         name: name ?? this.name,
         subtitle: subtitle ?? this.subtitle,
-        brand: brand ?? this.brand,
+        brandId: brandId ?? this.brandId,
+        brandName: brandName ?? this.brandName,
+        categoryId: categoryId ?? this.categoryId,
+        categoryNames: categoryNames ?? this.categoryNames,
         description: description ?? this.description,
         image: image ?? this.image,
         tags: tags ?? this.tags,
-        skinTypes: skinTypes ?? this.skinTypes,
+        skinType: skinType ?? this.skinType,
         keyIngredients: keyIngredients ?? this.keyIngredients,
-        category: category ?? this.category,
-        steps: steps ?? this.steps
+        steps: steps ?? this.steps,
+        isCrueltyFree: isCrueltyFree ?? this.isCrueltyFree,
+        isFragranceFree: isFragranceFree ?? this.isFragranceFree,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
+
+  static DateTime? parseDate(dynamic value) {
+    if (value == null) return null;
+
+    // Firestore Timestamp
+    if (value is Timestamp) {
+      return value.toDate();
+    }
+
+    // Epoch millis
+    if (value is int) {
+      return DateTime.fromMillisecondsSinceEpoch(value);
+    }
+
+    // ISO string
+    if (value is String) {
+      return DateTime.tryParse(value);
+    }
+
+    return null;
+  }
+
+}
+
+
+class ProductRecommendation {
+  final ProductModel product;
+  final double compatibilityScore;
+  final List<String> reasons;
+  final String matchType;
+
+  ProductRecommendation({
+    required this.product,
+    required this.compatibilityScore,
+    required this.reasons,
+    required this.matchType,
+  });
+
+  String get matchLabel {
+    switch (matchType) {
+      case 'perfect':
+        return '🌟 Perfect Match';
+      case 'great':
+        return '✨ Great Match';
+      case 'good':
+        return '👍 Good Match';
+      case 'alternative':
+        return '💡 Alternative Option';
+      default:
+        return '';
+    }
+  }
 
 }
