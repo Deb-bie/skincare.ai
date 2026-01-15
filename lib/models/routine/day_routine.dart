@@ -1,13 +1,13 @@
 import '../../enums/day_of_week.dart';
 import '../../enums/product_categories.dart';
 import '../../enums/routine_type.dart';
-import '../product/mini.dart';
+import '../product/product_model.dart';
 
 class DayRoutine {
   final DayOfWeek day;
   final RoutineType type;
-  final List<Product> products;
-  final Map<ProductCategory, List<Product>> stepsWithProducts;
+  final List<ProductModel> products;
+  final Map<ProductCategory, List<ProductModel>> stepsWithProducts;
 
   DayRoutine({
     required this.day,
@@ -37,22 +37,32 @@ class DayRoutine {
         ? RoutineType.morning
         : RoutineType.evening,
     products: (json['products'] as List)
-        .map((p) => Product.fromJson(p))
+        .map((p) => ProductModel.fromJson(
+      Map<String, dynamic>.from(p as Map),
+    ))
         .toList(),
-    stepsWithProducts: (json['stepsWithProducts'] as Map<String, dynamic>).map(
+
+    stepsWithProducts:
+    (json['stepsWithProducts'] as Map).map(
           (key, value) => MapEntry(
         ProductCategory.values.firstWhere((e) => e.name == key),
-        (value as List).map((p) => Product.fromJson(p)).toList(),
+        (value as List)
+            .map((p) => ProductModel.fromJson(
+          Map<String, dynamic>.from(p as Map),
+        ))
+            .toList(),
       ),
     ),
   );
 
-  DayRoutine copyWith({
-    DayOfWeek? day,
-    RoutineType? type,
-    List<Product>? products,
-    Map<ProductCategory, List<Product>>? stepsWithProducts,
-  }) {
+  DayRoutine copyWith(
+      {
+        DayOfWeek? day,
+        RoutineType? type,
+        List<ProductModel>? products,
+        Map<ProductCategory, List<ProductModel>>? stepsWithProducts,
+      }
+      ) {
     return DayRoutine(
       day: day ?? this.day,
       type: type ?? this.type,
