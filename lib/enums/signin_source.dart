@@ -1,0 +1,4 @@
+enum SignInSource {
+  back,
+  noback,
+}
