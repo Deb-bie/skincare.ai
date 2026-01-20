@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:myskiin/screens/skin_assessment/gender/gender.dart';
+import 'package:myskiin/services/data_manager/data_manager.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../core/utils/utils.dart';
+import '../../../enums/signin_source.dart';
+import '../../../providers/assessment_provider.dart';
 import '../../../services/auth/auth_service.dart';
 import '../signup/sign_up.dart';
 
@@ -12,6 +17,7 @@ class SignIn extends StatefulWidget {
 }
 
 class _SignInState extends State<SignIn> {
+  final DataManager _dataManager = DataManager();
   final _formKey = GlobalKey<FormState>();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
@@ -19,13 +25,36 @@ class _SignInState extends State<SignIn> {
   final _authService = AuthService();
   bool _isLoading = false;
   bool isPasswordVisible = false;
+  bool _isSigningInDirectly = false;
+  String errorMessage = "";
+
+
+  void _skip() async {
+    final provider = context.read<AssessmentProvider>();
+    await provider.initialize();
+    await UserPreferences.setLoggedIn(true);
+    final prefs = await SharedPreferences.getInstance();
+    final hasCompletedAssessment = prefs.getBool('completed_assessment') ?? false;
+
+    if (hasCompletedAssessment) {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/home', (route) => false,
+      );
+    } else {
+      // New user - go to assessment
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/gender', (route) => false,
+      );
+    }
+  }
 
 
   Future<void> _handleSignIn() async {
+    _isSigningInDirectly = true;
     if (!_formKey.currentState!.validate()) return;
-
     setState(() => _isLoading = true);
-
     final result = await _authService.signInWithEmail(
       email: emailController.text.trim(),
       password: passwordController.text,
@@ -34,45 +63,117 @@ class _SignInState extends State<SignIn> {
     if (!mounted) return;
 
     if (result.success) {
-      Navigator.pushReplacement(
-          context,
-        MaterialPageRoute(builder: (context) => const Gender()),
-      );
+      final provider = context.read<AssessmentProvider>();
+      await provider.initialize();
+      await UserPreferences.setLoggedIn(true);
+      final prefs = await SharedPreferences.getInstance();
 
+      await _dataManager.downloadAssessmentsFromFirebase(result.user!.uid);
+      await _dataManager.downloadRoutinesFromFirebase(result.user!.uid);
+      await _dataManager.downloadRemindersFromFirebase(result.user!.uid);
+      await _dataManager.downloadCompletionsFromFirebase(result.user!.uid);
+
+      final hasCompletedAssessment = prefs.getBool('completed_assessment') ?? false;
+
+      if (hasCompletedAssessment || _isSigningInDirectly) {
+        // Returning user - go straight to main
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/home', (route) => false,
+        );
+      } else {
+        // New user - go to assessment
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/gender', (route) => false,
+        );
+      }
     } else {
+      errorMessage = result.message;
       _showError(result.message);
       setState(() => _isLoading = false);
     }
   }
 
+
   Future<void> _handleGoogleSignIn() async {
-
-
+    _isSigningInDirectly = true;
     setState(() => _isLoading = true);
-
     final result = await _authService.signInWithGoogle();
-
     if (!mounted) return;
 
     if (result.success) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const Gender()),
-      );
+      // final provider = context.read<AssessmentProvider>();
+      // await provider.initialize();
+      // await UserPreferences.setLoggedIn(true);
+      // final prefs = await SharedPreferences.getInstance();
+      // final hasCompletedAssessment = prefs.getBool('completed_assessment') ?? false;
+      //
+      // if (hasCompletedAssessment || _isSigningInDirectly) {
+      //   // Returning user - go straight to main
+      //   Navigator.pushNamedAndRemoveUntil(
+      //     context,
+      //     '/home', (route) => false,
+      //   );
+      // } else {
+      //   // New user - go to assessment
+      //   Navigator.pushNamedAndRemoveUntil(
+      //     context,
+      //     '/gender', (route) => false,
+      //   );
+      // }
+
+
+
+
+      final provider = context.read<AssessmentProvider>();
+      await provider.initialize();
+      await UserPreferences.setLoggedIn(true);
+      final prefs = await SharedPreferences.getInstance();
+
+      await _dataManager.downloadAssessmentsFromFirebase(result.user!.uid);
+      await _dataManager.downloadRoutinesFromFirebase(result.user!.uid);
+      await _dataManager.downloadRemindersFromFirebase(result.user!.uid);
+      await _dataManager.downloadCompletionsFromFirebase(result.user!.uid);
+
+      final hasCompletedAssessment = prefs.getBool('completed_assessment') ?? false;
+
+      if (hasCompletedAssessment || _isSigningInDirectly) {
+        // Returning user - go straight to main
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/home', (route) => false,
+        );
+      } else {
+        // New user - go to assessment
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/gender', (route) => false,
+        );
+      }
+
+
+
+
     } else {
+      errorMessage = result.message;
       _showError(result.message);
       setState(() => _isLoading = false);
     }
   }
 
+
   void _showError(String message) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           message,
           style: const TextStyle(fontFamily: 'Poppins'),
         ),
-        backgroundColor: Colors.red[600],
+        backgroundColor: Colors.red[isDark ? 300 : 600],
       ),
     );
   }
@@ -81,157 +182,183 @@ class _SignInState extends State<SignIn> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+    final theme = Theme.of(context);
 
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF5F5F5),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-        title: const Text(
-          'Sign In',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-              fontFamily: "Poppins"
-          ),
-        ),
-        centerTitle: true,
+    final SignInSource source = ModalRoute.of(context)?.settings.arguments as SignInSource?
+            ?? SignInSource.noback;
 
-        actions: [
-          TextButton(
-            // onPressed: _completeOnboarding,
+    return WillPopScope(
+      onWillPop: () async {
+        return source == SignInSource.back;
+      },
+      child: Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+
+        appBar: AppBar(
+          backgroundColor: theme.scaffoldBackgroundColor,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back, color: theme.iconTheme.color),
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const Gender()),
-                // MaterialPageRoute(builder: (context) => const  RoutineBuilderScreen())
-              );
+              if (source == SignInSource.back) {
+                Navigator.pop(context);
+              } else {
+              }
             },
-            child: const Text(
-              'Skip',
-              style: TextStyle(
-                  color: Colors.black,
-                  fontFamily: "Poppins"
-              ),
+          ),
+
+          title: Text(
+            'Sign In',
+            style: theme.textTheme.bodyLarge?.copyWith(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
             ),
           ),
-        ],
-      ),
 
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+          centerTitle: true,
 
-              const SizedBox(height: 24),
+          actions: [
+            TextButton(
+              onPressed: () {
+                _skip();
+              },
 
-              _buildLabel('Email'),
-
-              const SizedBox(height: 8),
-
-              _buildTextField(
-                controller: emailController,
-                hintText: 'Enter your email',
-                keyboardType: TextInputType.emailAddress,
+              child: Text(
+                'Skip',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontFamily: "Poppins",
+                ),
               ),
+            ),
+          ],
+        ),
 
-              const SizedBox(height: 28),
 
-              _buildLabel('Password'),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(20.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
 
-              const SizedBox(height: 8),
+                if (errorMessage != "")
+                  Text(
+                      errorMessage,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: "Poppins",
+                      color: Colors.red,
+                      fontWeight: FontWeight.w600,
+                      fontStyle: FontStyle.italic
+                    ),
+                  ),
 
-              _buildPasswordField(
-                controller: passwordController,
-                hintText: 'Enter your password',
-                isVisible: isPasswordVisible,
-                onToggleVisibility: () {
-                  setState(() {
-                    isPasswordVisible = !isPasswordVisible;
-                  });
-                },
-              ),
+                const SizedBox(height: 24),
 
-              const SizedBox(height: 40),
+                _buildLabel('Email'),
 
-              _buildSignInButton(),
+                const SizedBox(height: 8),
 
-              const SizedBox(height: 20),
+                _buildTextField(
+                  controller: emailController,
+                  hintText: 'Enter your email',
+                  keyboardType: TextInputType.emailAddress,
+                ),
 
-              _buildDivider(),
+                const SizedBox(height: 28),
 
-              const SizedBox(height: 20),
+                _buildLabel('Password'),
 
-              _buildGoogleSignUpButton(),
+                const SizedBox(height: 8),
 
-              const SizedBox(height: 30),
+                _buildPasswordField(
+                  controller: passwordController,
+                  hintText: 'Enter your password',
+                  isVisible: isPasswordVisible,
+                  onToggleVisibility: () {
+                    setState(() {
+                      isPasswordVisible = !isPasswordVisible;
+                    });
+                  },
+                ),
 
-              _buildSignUpLink(),
+                const SizedBox(height: 40),
 
-              const SizedBox(height: 30),
-            ],
+                _buildSignInButton(),
+
+                const SizedBox(height: 20),
+
+                _buildDivider(),
+
+                const SizedBox(height: 20),
+
+                _buildGoogleSignUpButton(),
+
+                const SizedBox(height: 30),
+
+                _buildSignUpLink(),
+
+                const SizedBox(height: 30),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
+
+
   Widget _buildLabel(String text) {
+    final theme = Theme.of(context);
+
     return Text(
       text,
-      style: const TextStyle(
-        color: Colors.black,
+      style: theme.textTheme.bodyLarge?.copyWith(
         fontSize: 16,
         fontWeight: FontWeight.normal,
-          fontFamily: "Poppins"
       ),
     );
   }
+
+
 
   Widget _buildTextField({
     required TextEditingController controller,
     required String hintText,
     TextInputType keyboardType = TextInputType.text,
   }) {
+    final theme = Theme.of(context);
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
       decoration: BoxDecoration(
-        color: Colors.grey[200],
+        color: theme.inputDecorationTheme.fillColor,
         borderRadius: BorderRadius.circular(12),
       ),
 
       child: TextField(
         controller: controller,
         keyboardType: keyboardType,
-        style: const TextStyle(
-          // color: Colors.black,
+        style: theme.textTheme.bodyMedium?.copyWith(
           fontSize: 14,
-            fontFamily: "Poppins"
         ),
 
         decoration: InputDecoration(
           hintText: hintText,
-          hintStyle: TextStyle(
-            // color: Colors.black,
-            fontFamily: "Poppins",
+          hintStyle: theme.inputDecorationTheme.hintStyle?.copyWith(
             fontSize: 14,
           ),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         ),
       ),
     );
   }
+
+
 
   Widget _buildPasswordField({
     required TextEditingController controller,
@@ -239,35 +366,33 @@ class _SignInState extends State<SignIn> {
     required bool isVisible,
     required VoidCallback onToggleVisibility,
   }) {
+    final theme = Theme.of(context);
+
     return Container(
       padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 4
+          horizontal: 0,
+          vertical: 0
       ),
 
       decoration: BoxDecoration(
-        color: Colors.grey[200],
+        color: theme.inputDecorationTheme.fillColor,
         borderRadius: BorderRadius.circular(12),
       ),
 
       child: TextField(
         controller: controller,
         obscureText: !isVisible,
-        style: const TextStyle(
-          // color: Colors.black,
+        style: theme.textTheme.bodyMedium?.copyWith(
           fontSize: 16,
-            fontFamily: "Poppins"
         ),
 
         decoration: InputDecoration(
           hintText: hintText,
-          hintStyle: TextStyle(
-            // color: Colors.black,
+          hintStyle: theme.inputDecorationTheme.hintStyle?.copyWith(
             fontSize: 14,
-              fontFamily: "Poppins"
           ),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
           suffixIcon: IconButton(
             icon: Icon(
               isVisible ? Icons.visibility : Icons.visibility_off,
@@ -280,11 +405,14 @@ class _SignInState extends State<SignIn> {
     );
   }
 
+
   Widget _buildSignInButton() {
+    final theme = Theme.of(context);
+
     return ElevatedButton(
       onPressed: _isLoading ? null : _handleSignIn,
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.teal[500],
+        backgroundColor: theme.primaryColor,
         padding: const EdgeInsets.symmetric(vertical: 18),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(30),
@@ -313,11 +441,13 @@ class _SignInState extends State<SignIn> {
   }
 
   Widget _buildDivider() {
+    final theme = Theme.of(context);
+
     return Row(
       children: [
         Expanded(
           child: Divider(
-            color: Colors.grey.shade400,
+            color: theme.dividerTheme.color,
             thickness: 1,
           ),
         ),
@@ -325,8 +455,7 @@ class _SignInState extends State<SignIn> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
             'OR',
-            style: TextStyle(
-              color: Colors.grey.shade600,
+            style: theme.textTheme.bodyMedium?.copyWith(
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
@@ -334,7 +463,7 @@ class _SignInState extends State<SignIn> {
         ),
         Expanded(
           child: Divider(
-            color: Colors.grey.shade400,
+            color: theme.dividerTheme.color,
             thickness: 1,
           ),
         ),
@@ -342,7 +471,12 @@ class _SignInState extends State<SignIn> {
     );
   }
 
+
+
   Widget _buildGoogleSignUpButton() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return OutlinedButton.icon(
       onPressed: _isLoading ? null : _handleGoogleSignIn,
       icon: Image.asset(
@@ -359,28 +493,32 @@ class _SignInState extends State<SignIn> {
       ),
       label: Padding(
         padding: const EdgeInsets.fromLTRB(20.0, 0, 0, 0),
-        child: const Text(
+        child: Text(
           'Sign in with Google',
-          style: TextStyle(
-            color: Colors.black,
+          style: theme.textTheme.bodyLarge?.copyWith(
             fontSize: 16,
             fontWeight: FontWeight.normal,
-              fontFamily: "Poppins"
           ),
         ),
       ),
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 16),
-        side: BorderSide(color: Colors.grey.shade300, width: 1.5),
+        side: BorderSide(
+            color: isDark ? Colors.grey[700]! : Colors.grey.shade300,
+            width: 1.5),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(30),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: theme.cardTheme.color,
       ),
     );
   }
 
+
+
   Widget _buildSignUpLink() {
+    final theme = Theme.of(context);
+
     return Center(
       child: GestureDetector(
         onTap: () {
@@ -392,16 +530,14 @@ class _SignInState extends State<SignIn> {
         child: RichText(
           text: TextSpan(
             text: "Don't have an account? ",
-            style: TextStyle(
-              color: Colors.grey.shade700,
-              fontFamily: "Poppins",
+            style: theme.textTheme.bodyMedium?.copyWith(
               fontSize: 15,
             ),
             children: [
               TextSpan(
                 text: 'Sign Up',
                 style: TextStyle(
-                  color: Colors.teal[500],
+                  color: theme.primaryColor,
                   fontFamily: "Poppins",
                   fontWeight: FontWeight.normal,
                 ),
