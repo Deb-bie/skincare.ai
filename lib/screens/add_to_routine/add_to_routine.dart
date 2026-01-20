@@ -26,7 +26,6 @@ class _AddToRoutineState extends State<AddToRoutine> {
   String? eveningCategory;
   ProductModel? product;
 
-  // Track if product is already in routines
   bool isInMorningRoutine = false;
   bool isInEveningRoutine = false;
 
@@ -41,7 +40,6 @@ class _AddToRoutineState extends State<AddToRoutine> {
 
   void _checkExistingRoutines() {
     final routineProvider = context.read<RoutineProvider>();
-
     isInMorningRoutine = routineProvider.isProductInRoutine(
       widget.product,
       type: RoutineType.morning,
@@ -103,7 +101,6 @@ class _AddToRoutineState extends State<AddToRoutine> {
       }
     }
   }
-
 
 
 
