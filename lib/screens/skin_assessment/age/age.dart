@@ -24,10 +24,12 @@ class _AgeState extends State<Age> {
 
     // Load existing selection if available
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final provider = Provider.of<AssessmentProvider>(context, listen: false);
-      if (provider.assessmentData.ageRange != null) {
+      final provider = context.read<AssessmentProvider>();
+      final assessment = provider.assessmentData;
+
+      if (assessment!.ageRange != null) {
         setState(() {
-          selectedAgeRange = provider.assessmentData.ageRange;
+          selectedAgeRange = assessment.ageRange;
         });
       }
     });
@@ -35,26 +37,17 @@ class _AgeState extends State<Age> {
 
   void _skip() {
     // Clear any selection from provider before skipping
-    final provider = Provider.of<AssessmentProvider>(context, listen: false);
-    provider.updateAgeRange(null);
-
-    setState(() {
-      selectedAgeRange = null;
-    });
-
+    context.read<AssessmentProvider>().updateAgeRange(null);
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const SkinType()),
-      //   MaterialPageRoute(builder: (context) => const Home())
     );
   }
 
   void _saveAndContinue() {
     if (selectedAgeRange != null) {
-      final provider = Provider.of<AssessmentProvider>(context, listen: false);
-      provider.updateAgeRange(selectedAgeRange!);
+      context.read<AssessmentProvider>().updateAgeRange(selectedAgeRange);
     }
-
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const SkinType()),
@@ -119,7 +112,7 @@ class _AgeState extends State<Age> {
                     borderRadius: BorderRadius.circular(10),
                     child: LinearProgressIndicator(
                       value: currentAssessmentQuestion / totalAssessmentQuestion,
-                      backgroundColor: colorScheme.primary.withOpacity(0.2),
+                      backgroundColor: colorScheme.primary.withValues(alpha: 0.2),
                       valueColor: AlwaysStoppedAnimation<Color>(
                         colorScheme.primary,
                       ),
@@ -242,7 +235,6 @@ class _AgeState extends State<Age> {
                 ],
               ),
             ),
-
           ],
         ),
       ),
