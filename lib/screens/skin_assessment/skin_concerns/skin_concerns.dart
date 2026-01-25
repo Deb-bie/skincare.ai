@@ -46,10 +46,12 @@ class _SkinConcernsState extends State<SkinConcerns> {
 
     // Load existing selection if available
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final provider = Provider.of<AssessmentProvider>(context, listen: false);
-      if (provider.assessmentData.skinConcerns!.isNotEmpty) {
+      final provider = context.read<AssessmentProvider>();
+      final assessment = provider.assessmentData;
+
+      if (assessment!.skinConcerns!.isNotEmpty) {
         setState(() {
-          selectedSkinConcerns = provider.assessmentData.skinConcerns!;
+          selectedSkinConcerns = assessment.skinConcerns!.toSet();
         });
       }
     });
@@ -57,12 +59,7 @@ class _SkinConcernsState extends State<SkinConcerns> {
 
   void _skip() {
     // Clear any selection from provider before skipping
-    final provider = Provider.of<AssessmentProvider>(context, listen: false);
-    provider.updateSkinConcerns({});
-
-    setState(() {
-      selectedSkinConcerns = {};
-    });
+    context.read<AssessmentProvider>().updateSkinConcerns(null);
 
     Navigator.push(
       context,
@@ -72,8 +69,7 @@ class _SkinConcernsState extends State<SkinConcerns> {
 
   void _saveAndContinue() {
     if (selectedSkinConcerns!.isNotEmpty) {
-      final provider = Provider.of<AssessmentProvider>(context, listen: false);
-      provider.updateSkinConcerns(selectedSkinConcerns!);
+      context.read<AssessmentProvider>().updateSkinConcerns(selectedSkinConcerns!.toList());
     }
 
     Navigator.push(
@@ -85,15 +81,18 @@ class _SkinConcernsState extends State<SkinConcerns> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: theme.scaffoldBackgroundColor,
 
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
 
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: theme.iconTheme.color),
           onPressed: () {
             Navigator.pop(context);
           },
@@ -102,10 +101,10 @@ class _SkinConcernsState extends State<SkinConcerns> {
         actions: [
           TextButton(
             onPressed: _skip,
-            child: const Text(
+            child: Text(
               'Skip',
               style: TextStyle(
-                  color: Colors.black,
+                  color: colorScheme.onSurface,
                   fontFamily: "Poppins"
               ),
             ),
@@ -124,9 +123,9 @@ class _SkinConcernsState extends State<SkinConcerns> {
                 children: [
                   Text(
                     'Question $currentAssessmentQuestion of $totalAssessmentQuestion',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
-                      color: Colors.black,
+                      color: colorScheme.onSurface,
                       fontWeight: FontWeight.normal,
                       fontFamily: 'Poppins',
                     ),
@@ -136,9 +135,9 @@ class _SkinConcernsState extends State<SkinConcerns> {
                     borderRadius: BorderRadius.circular(10),
                     child: LinearProgressIndicator(
                       value: currentAssessmentQuestion / totalAssessmentQuestion,
-                      backgroundColor: Colors.teal.shade50,
+                      backgroundColor: colorScheme.primary.withValues(alpha: 0.2),
                       valueColor: AlwaysStoppedAnimation<Color>(
-                        Colors.teal.shade500,
+                        colorScheme.primary,
                       ),
                       minHeight: 8,
                     ),
@@ -154,28 +153,22 @@ class _SkinConcernsState extends State<SkinConcerns> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
 
-                      const Text(
+                      Text(
                         "What are your primary skin concerns?",
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                          fontFamily: 'Poppins',
+                        style: theme.textTheme.displayMedium?.copyWith(
                           height: 1.2,
                         ),
                       ),
 
                       const SizedBox(height: 12),
 
-                      const Text(
+                      Text(
                         'Select up to 5. This will help us tailor the best skincare for you.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey,
-                            height: 1.4,
-                            fontFamily: 'Poppins'
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontSize: 16,
+                          height: 1.5,
                         ),
                       ),
 
@@ -222,15 +215,6 @@ class _SkinConcernsState extends State<SkinConcerns> {
                     height: 56,
                     child: ElevatedButton(
                       onPressed: selectedSkinConcerns!.isNotEmpty ?_saveAndContinue : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.teal[500],
-                        foregroundColor: Colors.white,
-                        disabledBackgroundColor: const Color(0xFFD8D6E8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(28),
-                        ),
-                        elevation: 0,
-                      ),
                       child: const Text(
                         'Continue',
                         style: TextStyle(
@@ -246,8 +230,6 @@ class _SkinConcernsState extends State<SkinConcerns> {
                 ],
               ),
             ),
-
-
           ],
         ),
       ),

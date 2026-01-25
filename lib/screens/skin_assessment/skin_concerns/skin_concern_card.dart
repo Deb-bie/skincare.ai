@@ -14,6 +14,9 @@ class SkinConcernCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return GestureDetector(
       onTap: onTap,
 
@@ -22,18 +25,17 @@ class SkinConcernCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
 
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.cardTheme.color,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected
                 ? Colors.teal
-                // ? const Color(0x71B8B3E8)
                 : Colors.transparent,
-            width: 1,
+            width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -52,15 +54,13 @@ class SkinConcernCard extends StatelessWidget {
                 border: Border.all(
                   color: isSelected
                       ? Colors.teal
-                      // ? const Color(0x71B8B3E8)
                       : const Color(0xFFD0D0D0),
                   width: 2,
                 ),
 
                 color: isSelected
                     ? Colors.teal
-                    // ? const Color(0x71B8B3E8)
-                    : Colors.white,
+                    : Colors.white70,
               ),
 
               child: isSelected ?
@@ -76,10 +76,10 @@ class SkinConcernCard extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xFF2C3E50),
+                  color: colorScheme.onSurface,
                   fontFamily: 'Poppins',
                 ),
               ),
