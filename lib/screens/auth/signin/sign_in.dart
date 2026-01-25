@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/utils/utils.dart';
 import '../../../enums/signin_source.dart';
 import '../../../providers/assessment_provider.dart';
+import '../../../providers/routine_provider.dart';
 import '../../../services/auth/auth_service.dart';
 import '../signup/sign_up.dart';
 
@@ -26,13 +27,20 @@ class _SignInState extends State<SignIn> {
   bool _isLoading = false;
   bool isPasswordVisible = false;
   bool _isSigningInDirectly = false;
+  bool _isDisposed = false;
   String errorMessage = "";
+
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
 
   void _skip() async {
     final provider = context.read<AssessmentProvider>();
     await provider.initialize();
-    await UserPreferences.setLoggedIn(true);
+    await UserPreferences.setLoggedIn(false);
     final prefs = await SharedPreferences.getInstance();
     final hasCompletedAssessment = prefs.getBool('completed_assessment') ?? false;
 
@@ -53,40 +61,47 @@ class _SignInState extends State<SignIn> {
 
   Future<void> _handleSignIn() async {
     _isSigningInDirectly = true;
+    if (_isDisposed || !mounted) return;
     if (!_formKey.currentState!.validate()) return;
+
     setState(() => _isLoading = true);
     final result = await _authService.signInWithEmail(
       email: emailController.text.trim(),
       password: passwordController.text,
     );
 
-    if (!mounted) return;
+    if (_isDisposed || !mounted) return;
 
     if (result.success) {
       final provider = context.read<AssessmentProvider>();
       await provider.initialize();
+
+      if (_isDisposed || !mounted) return;
+
       await UserPreferences.setLoggedIn(true);
       final prefs = await SharedPreferences.getInstance();
-
       await _dataManager.downloadAssessmentsFromFirebase(result.user!.uid);
+      if (!mounted) return;
       await _dataManager.downloadRoutinesFromFirebase(result.user!.uid);
+      if (!mounted) return;
       await _dataManager.downloadRemindersFromFirebase(result.user!.uid);
+      if (!mounted) return;
       await _dataManager.downloadCompletionsFromFirebase(result.user!.uid);
-
+      if (!mounted) return;
+      if (mounted) {
+        final routineProvider = context.read<RoutineProvider>();
+        await routineProvider.reloadFromHive();
+      }
+      if (!mounted) return;
       final hasCompletedAssessment = prefs.getBool('completed_assessment') ?? false;
+      if (mounted) {
 
-      if (hasCompletedAssessment || _isSigningInDirectly) {
-        // Returning user - go straight to main
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/home', (route) => false,
-        );
-      } else {
-        // New user - go to assessment
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/gender', (route) => false,
-        );
+        if (hasCompletedAssessment || _isSigningInDirectly) {
+          Navigator.pushNamed(context, '/home').then((value) {});
+        } else {
+          Navigator.pushNamed(context, '/gender')
+              .then((value) {});
+        }
       }
     } else {
       errorMessage = result.message;
@@ -103,58 +118,36 @@ class _SignInState extends State<SignIn> {
     if (!mounted) return;
 
     if (result.success) {
-      // final provider = context.read<AssessmentProvider>();
-      // await provider.initialize();
-      // await UserPreferences.setLoggedIn(true);
-      // final prefs = await SharedPreferences.getInstance();
-      // final hasCompletedAssessment = prefs.getBool('completed_assessment') ?? false;
-      //
-      // if (hasCompletedAssessment || _isSigningInDirectly) {
-      //   // Returning user - go straight to main
-      //   Navigator.pushNamedAndRemoveUntil(
-      //     context,
-      //     '/home', (route) => false,
-      //   );
-      // } else {
-      //   // New user - go to assessment
-      //   Navigator.pushNamedAndRemoveUntil(
-      //     context,
-      //     '/gender', (route) => false,
-      //   );
-      // }
-
-
-
-
       final provider = context.read<AssessmentProvider>();
       await provider.initialize();
+
+      if (_isDisposed || !mounted) return;
+
       await UserPreferences.setLoggedIn(true);
       final prefs = await SharedPreferences.getInstance();
-
       await _dataManager.downloadAssessmentsFromFirebase(result.user!.uid);
+      if (!mounted) return;
       await _dataManager.downloadRoutinesFromFirebase(result.user!.uid);
+      if (!mounted) return;
       await _dataManager.downloadRemindersFromFirebase(result.user!.uid);
+      if (!mounted) return;
       await _dataManager.downloadCompletionsFromFirebase(result.user!.uid);
-
-      final hasCompletedAssessment = prefs.getBool('completed_assessment') ?? false;
-
-      if (hasCompletedAssessment || _isSigningInDirectly) {
-        // Returning user - go straight to main
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/home', (route) => false,
-        );
-      } else {
-        // New user - go to assessment
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/gender', (route) => false,
-        );
+      if (!mounted) return;
+      if (mounted) {
+        final routineProvider = context.read<RoutineProvider>();
+        await routineProvider.reloadFromHive();
       }
+      if (!mounted) return;
+      final hasCompletedAssessment = prefs.getBool('completed_assessment') ?? false;
+      if (mounted) {
 
-
-
-
+        if (hasCompletedAssessment || _isSigningInDirectly) {
+          Navigator.pushNamed(context, '/home').then((value) {});
+        } else {
+          Navigator.pushNamed(context, '/gender')
+              .then((value) {});
+        }
+      }
     } else {
       errorMessage = result.message;
       _showError(result.message);
@@ -236,24 +229,39 @@ class _SignInState extends State<SignIn> {
 
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(20.0),
+
           child: Form(
             key: _formKey,
+
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
 
                 if (errorMessage != "")
-                  Text(
-                      errorMessage,
+                  Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF7A59).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Color(0xFFFF7A59).withValues(alpha: 0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      )
+                    ],
+                  ),
+                  child: Text(
+                    errorMessage,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 16,
-                      fontFamily: "Poppins",
-                      color: Colors.red,
                       fontWeight: FontWeight.w600,
-                      fontStyle: FontStyle.italic
+                      color: Color(0xFFFF7A59),
+                      fontFamily: "Poppins",
                     ),
                   ),
+                ),
 
                 const SizedBox(height: 24),
 
@@ -310,7 +318,6 @@ class _SignInState extends State<SignIn> {
   }
 
 
-
   Widget _buildLabel(String text) {
     final theme = Theme.of(context);
 
@@ -322,7 +329,6 @@ class _SignInState extends State<SignIn> {
       ),
     );
   }
-
 
 
   Widget _buildTextField({
@@ -357,7 +363,6 @@ class _SignInState extends State<SignIn> {
       ),
     );
   }
-
 
 
   Widget _buildPasswordField({
@@ -440,6 +445,8 @@ class _SignInState extends State<SignIn> {
     );
   }
 
+
+
   Widget _buildDivider() {
     final theme = Theme.of(context);
 
@@ -470,7 +477,6 @@ class _SignInState extends State<SignIn> {
       ],
     );
   }
-
 
 
   Widget _buildGoogleSignUpButton() {
@@ -515,7 +521,6 @@ class _SignInState extends State<SignIn> {
   }
 
 
-
   Widget _buildSignUpLink() {
     final theme = Theme.of(context);
 
@@ -549,8 +554,10 @@ class _SignInState extends State<SignIn> {
     );
   }
 
+
   @override
   void dispose() {
+    _isDisposed = true;
     emailController.dispose();
     passwordController.dispose();
     super.dispose();
