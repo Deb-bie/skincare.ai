@@ -1,5 +1,6 @@
 import 'dart:core';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:myskiin/enums/product_categories.dart';
 
@@ -35,7 +36,6 @@ class RoutineProvider extends ChangeNotifier {
   RoutineProvider() {
     initialize();
   }
-
 
 
   Future<void> initialize() async {
@@ -129,6 +129,10 @@ class RoutineProvider extends ChangeNotifier {
 
     // Save to Hive
     await _hiveRoutineModel!.save();
+
+    if (FirebaseAuth.instance.currentUser != null) {
+      await _dataManager.syncRoutinesToFirebase(FirebaseAuth.instance.currentUser!.uid, _hiveRoutineModel!);
+    }
   }
 
 
@@ -517,6 +521,17 @@ class RoutineProvider extends ChangeNotifier {
   }
 
 
+  Map<ProductCategory, List<ProductModel>> getSortedStepsForDay(
+      DayOfWeek day,
+      RoutineType type
+      ) {
+    final routine = getDayRoutine(day, type);
+    if (routine == null) return {};
+
+    return _sortStepsByCategory(routine.stepsWithProducts);
+  }
+
+
   // Sort the stepsWithProducts map by category order
   Map<ProductCategory, List<ProductModel>> _sortStepsByCategory(Map<ProductCategory, List<ProductModel>> steps) {
     final sortedKeys = ProductCategoryOrder.getSortedCategories(steps.keys);
@@ -764,7 +779,6 @@ class RoutineProvider extends ChangeNotifier {
         return DayOfWeek.sunday;
     }
   }
-
 
 
   Future<void> toggleProductCompletion(
