@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -23,43 +22,21 @@ class _GenderState extends State<Gender> {
   void initState() {
     super.initState();
 
-    // Load existing selection if available
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // final provider = Provider.of<AssessmentProvider>(context, listen: false);
-      // final assessment = provider.assessmentData;
-
       final provider = context.read<AssessmentProvider>();
       final assessment = provider.assessmentData;
 
-      if (assessment!.gender != null) {
+      if (assessment?.gender != null) {
         setState(() {
-          selectedGender = assessment.gender;
-          print("selected gender: $selectedGender");
+          selectedGender = assessment!.gender;
         });
       }
-
-      // if (provider.assessmentData.gender != null) {
-      //   setState(() {
-      //     selectedGender = provider.assessmentData.gender;
-      //   });
-      // }
-
     });
   }
 
   void _skip() {
     // Clear any selection from provider before skipping
-    // final provider = Provider.of<AssessmentProvider>(context, listen: false);
-
-    // context.read<AssessmentProvider>().updateGender(null);
     context.read<AssessmentProvider>().updateGender(null);
-
-    // provider.updateGender(null);
-    //
-    // setState(() {
-    //   selectedGender = null;
-    // });
-
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const Age()),
@@ -68,11 +45,7 @@ class _GenderState extends State<Gender> {
 
   void _saveAndContinue() {
     if (selectedGender != null) {
-      // final provider = Provider.of<AssessmentProvider>(context, listen: false);
-      // provider.updateGender(selectedGender!);
-
       context.read<AssessmentProvider>().updateGender(selectedGender);
-      print("my seleceted gender: $selectedGender");
     }
 
     Navigator.push(
@@ -85,7 +58,6 @@ class _GenderState extends State<Gender> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final user = FirebaseAuth.instance.currentUser;
 
 
     return WillPopScope(
@@ -94,7 +66,7 @@ class _GenderState extends State<Gender> {
         Navigator.pushNamedAndRemoveUntil(
           context,
           '/onboarding',
-              (route) => false, // Remove all routes
+              (route) => false,
         );
         return false;
       },
@@ -108,7 +80,6 @@ class _GenderState extends State<Gender> {
           leading: IconButton(
             icon: Icon(Icons.arrow_back, color: theme.iconTheme.color),
             onPressed: () {
-              // Go back to onboarding
               Navigator.pushNamedAndRemoveUntil(
                 context,
                 '/onboarding',
@@ -133,9 +104,7 @@ class _GenderState extends State<Gender> {
 
         body: SafeArea(
           child: Column(
-
             children: [
-
               Padding(
                 padding: const EdgeInsets.only(left: 24, right: 24.0),
                 child: Column(
@@ -157,7 +126,7 @@ class _GenderState extends State<Gender> {
                       borderRadius: BorderRadius.circular(10),
                       child: LinearProgressIndicator(
                         value: currentAssessmentQuestion / totalAssessmentQuestion,
-                        backgroundColor: colorScheme.primary.withOpacity(0.2),
+                        backgroundColor: colorScheme.primary.withValues(alpha: 0.2),
                         valueColor: AlwaysStoppedAnimation<Color>(
                           colorScheme.primary,
                         ),
@@ -192,7 +161,6 @@ class _GenderState extends State<Gender> {
                           fontSize: 16,
                           height: 1.5,
                         ),
-
                       ),
 
                       const SizedBox(height: 30),

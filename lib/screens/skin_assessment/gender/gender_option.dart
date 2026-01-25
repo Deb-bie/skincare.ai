@@ -16,6 +16,9 @@ class GenderOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return GestureDetector(
       onTap: onTap,
 
@@ -26,20 +29,19 @@ class GenderOption extends StatelessWidget {
             vertical: 20
         ),
         decoration: BoxDecoration(
-          // color: Colors.white,
           color: isSelected
-              ? const Color(0x71B8B3E8)
-              : Colors.white,
+              ? colorScheme.primary.withValues(alpha: 0.15)
+              : theme.cardTheme.color,
           borderRadius: BorderRadius.circular(28),
           border: Border.all(
             color: isSelected
-                ? const Color(0x71B8B3E8)
+                ? colorScheme.primary
                 : Colors.transparent,
             width: 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -48,32 +50,12 @@ class GenderOption extends StatelessWidget {
 
         child: Row(
           children: [
-
-            // Container(
-            //   width: 24,
-            //   height: 24,
-            //   decoration: BoxDecoration(
-            //     shape: BoxShape.circle,
-            //     border: Border.all(
-            //       color: isSelected
-            //           ? const Color(0xFFB8B3E8)
-            //           : const Color(0xFFE0E0E0),
-            //       width: 2,
-            //     ),
-            //     color: Colors.white,
-            //   ),
-            // ),
-            //
-            // const SizedBox(width: 16),
-
             Expanded(
               child: Text(
                 label,
-                style: TextStyle(
+                style: theme.textTheme.bodyLarge?.copyWith(
                   fontSize: 16,
-                  fontFamily: "Poppins",
                   fontWeight: FontWeight.normal,
-                  color: Colors.black87,
                 ),
               ),
             ),
@@ -83,7 +65,7 @@ class GenderOption extends StatelessWidget {
               Icon(
                 icon,
                 size: 24,
-                color: Colors.black87,
+                color: theme.iconTheme.color,
               ),
             ],
           ],
