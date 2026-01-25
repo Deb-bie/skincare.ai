@@ -406,6 +406,12 @@ class _RoutinePageState extends State<RoutinePage> {
       );
     }
 
+    // Get sorted steps from provider
+    final sortedSteps = provider.getSortedStepsForDay(
+        _selectedDay,
+        _selectedRoutineType
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -460,18 +466,15 @@ class _RoutinePageState extends State<RoutinePage> {
 
         const SizedBox(height: 20),
 
-        ...routine.stepsWithProducts.entries.map((entry) {
+        ...sortedSteps.entries.map((entry) {
           final category = entry.key;
           final products = entry.value;
-          final categoryIndex = category.index;
-          final prod = routine.stepsWithProducts.length;
 
           return _buildRoutineStep(
-            categoryIndex,
             category,
             products,
-            categoryIndex,
-            prod,
+            sortedSteps.keys.toList().indexOf(category),
+            sortedSteps.length,
           );
         }),
       ],
@@ -479,7 +482,11 @@ class _RoutinePageState extends State<RoutinePage> {
   }
 
 
-  Widget _buildRoutineStep(int stepNumber, ProductCategory category, List<ProductModel> products, int index, int prod) {
+  Widget _buildRoutineStep(
+      ProductCategory category,
+      List<ProductModel> products,
+      int index,
+      int prod) {
     final theme = Theme.of(context);
     final categoryIcon = getCategoryIcon(
         category.name.isNotEmpty == true
@@ -705,7 +712,6 @@ class _RoutinePageState extends State<RoutinePage> {
                         color: isCompleted
                             ? (_selectedRoutineType.name == "morning"
                             ? Color(0xFFFF9B7A)
-                            // : Color(0xFF9B7AFF)
                             : Colors.deepPurple
                         )
                             : Colors.transparent,
@@ -715,7 +721,6 @@ class _RoutinePageState extends State<RoutinePage> {
                               ? (_selectedRoutineType.name == "morning"
                               ? Color(0xFFFF9B7A)
                           : Colors.deepPurple
-                              // : Color(0xFF9B7AFF)
                           )
                               : (isDark ? Colors.grey[600]! : Colors.grey.shade400),
                           width: 1,
