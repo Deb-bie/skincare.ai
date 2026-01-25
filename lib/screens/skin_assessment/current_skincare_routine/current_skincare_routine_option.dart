@@ -14,6 +14,8 @@ class CurrentSkincareRoutineOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return GestureDetector(
       onTap: onTap,
@@ -26,18 +28,18 @@ class CurrentSkincareRoutineOption extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: isSelected
-              ? const Color(0x71B8B3E8)
-              : Colors.white,
+              ? colorScheme.primary.withValues(alpha: 0.15)
+              : theme.cardTheme.color,
           borderRadius: BorderRadius.circular(28),
           border: Border.all(
             color: isSelected
-                ? const Color(0x71B8B3E8)
+                ? colorScheme.primary
                 : Colors.transparent,
             width: 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -49,11 +51,9 @@ class CurrentSkincareRoutineOption extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: TextStyle(
+                style: theme.textTheme.bodyLarge?.copyWith(
                   fontSize: 16,
-                  fontFamily: "Poppins",
                   fontWeight: FontWeight.normal,
-                  color: Colors.black87,
                 ),
               ),
             ),

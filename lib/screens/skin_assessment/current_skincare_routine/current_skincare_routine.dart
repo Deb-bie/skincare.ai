@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 import 'package:myskiin/screens/skin_assessment/analyze_assement/analyze_assessment.dart';
+import 'package:myskiin/services/data_manager/data_manager.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../core/utils/utils.dart';
 import '../../../providers/assessment_provider.dart';
+import '../../../services/data_manager/hive_models/hive_assessment_model.dart';
+import '../../../services/data_manager/hive_models/user/hive_user_model.dart';
 import '../age/age_option.dart';
 import 'current_skincare_routine_option.dart';
 
@@ -14,6 +20,7 @@ class CurrentSkincareRoutine extends StatefulWidget {
 }
 
 class _CurrentSkincareRoutineState extends State<CurrentSkincareRoutine> {
+  final DataManager _dataManager = DataManager();
   int currentAssessmentQuestion = 5;
   int totalAssessmentQuestion = 5;
   String? selectedCurrentRoutine;
@@ -24,52 +31,85 @@ class _CurrentSkincareRoutineState extends State<CurrentSkincareRoutine> {
 
     // Load existing selection if available
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final provider = Provider.of<AssessmentProvider>(context, listen: false);
-      if (provider.assessmentData.currentRoutine != null) {
+      final provider = context.read<AssessmentProvider>();
+      final assessment = provider.assessmentData;
+
+      if (assessment?.currentRoutine != null) {
         setState(() {
-          selectedCurrentRoutine = provider.assessmentData.currentRoutine;
+          selectedCurrentRoutine = assessment!.currentRoutine;
         });
       }
     });
   }
 
-  void _skip() {
-    // Clear any selection from provider before skipping
-    final provider = Provider.of<AssessmentProvider>(context, listen: false);
-    provider.updateCurrentRoutine(null);
 
-    setState(() {
-      selectedCurrentRoutine = null;
-    });
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const AnalyzeAssessment()),
-    );
-  }
-
-  void _saveAndContinue() {
-    if (selectedCurrentRoutine != null) {
-      final provider = Provider.of<AssessmentProvider>(context, listen: false);
-      provider.updateCurrentRoutine(selectedCurrentRoutine!);
+  void pushAssessmentsToFirebase(){
+    final userBox = Hive.box<HiveUserModel>('users');
+    final user = userBox.get('currentUser');
+    if (user != null) {
+      _dataManager.syncAssessmentsAfterLogin(user.uid);
     }
+  }
+
+
+  void _skip() async {
+    context.read<AssessmentProvider>().updateCurrentRoutine(null);
+    context.read<AssessmentProvider>().submitAssessment();
+    pushAssessmentsToFirebase();
+
+    final assessmentProvider = context.read<AssessmentProvider>();
+    final HiveAssessmentModel? assessment = assessmentProvider.assessmentData;
+
+    await UserPreferences.setAssessmentComplete(true);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('completed_assessment', true);
 
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const AnalyzeAssessment()),
+      MaterialPageRoute(builder: (context) => AnalyzeAssessment(
+          assessment: assessment
+      )),
     );
   }
+
+
+
+  void _saveAndContinue() async {
+    if (selectedCurrentRoutine != null) {
+      context.read<AssessmentProvider>().updateCurrentRoutine(selectedCurrentRoutine);
+      context.read<AssessmentProvider>().submitAssessment();
+
+      pushAssessmentsToFirebase();
+
+      final assessmentProvider = context.read<AssessmentProvider>();
+      final HiveAssessmentModel? assessment = assessmentProvider.assessmentData;
+
+      await UserPreferences.setAssessmentComplete(true);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('completed_assessment', true);
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => AnalyzeAssessment(
+            assessment: assessment
+        )),
+      );
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: theme.iconTheme.color),
           onPressed: () {
             Navigator.pop(context);
           },
@@ -78,10 +118,10 @@ class _CurrentSkincareRoutineState extends State<CurrentSkincareRoutine> {
         actions: [
           TextButton(
             onPressed: _skip,
-            child: const Text(
+            child: Text(
               'Skip',
               style: TextStyle(
-                  color: Colors.black,
+                  color: colorScheme.onSurface,
                   fontFamily: "Poppins"
               ),
             ),
@@ -100,21 +140,23 @@ class _CurrentSkincareRoutineState extends State<CurrentSkincareRoutine> {
                 children: [
                   Text(
                     'Question $currentAssessmentQuestion of $totalAssessmentQuestion',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
-                      color: Colors.black,
+                      color: colorScheme.onSurface,
                       fontWeight: FontWeight.normal,
                       fontFamily: 'Poppins',
                     ),
                   ),
+
                   const SizedBox(height: 12),
+
                   ClipRRect(
                     borderRadius: BorderRadius.circular(10),
                     child: LinearProgressIndicator(
                       value: currentAssessmentQuestion / totalAssessmentQuestion,
-                      backgroundColor: Colors.teal.shade50,
+                      backgroundColor: colorScheme.primary.withValues(alpha: 0.2),
                       valueColor: AlwaysStoppedAnimation<Color>(
-                        Colors.teal.shade500,
+                        colorScheme.primary,
                       ),
                       minHeight: 8,
                     ),
@@ -130,14 +172,10 @@ class _CurrentSkincareRoutineState extends State<CurrentSkincareRoutine> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
 
-                    const Text(
+                    Text(
                       "What's your current skincare routine?",
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: "Poppins",
-                        color: Colors.black,
+                      style: theme.textTheme.displayMedium?.copyWith(
                         height: 1.2,
                       ),
                     ),
@@ -147,10 +185,8 @@ class _CurrentSkincareRoutineState extends State<CurrentSkincareRoutine> {
                     Text(
                       "We'll use this information to personalize your experience.",
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: theme.textTheme.bodyMedium?.copyWith(
                         fontSize: 16,
-                        color: Colors.grey,
-                        fontFamily: "Poppins",
                         height: 1.5,
                       ),
                     ),
@@ -193,7 +229,6 @@ class _CurrentSkincareRoutineState extends State<CurrentSkincareRoutine> {
                       isSelected: selectedCurrentRoutine == 'prefer_not_to_say',
                       onTap: () => setState(() => selectedCurrentRoutine = 'prefer_not_to_say'),
                     ),
-
                   ],
                 ),
               ),
@@ -208,16 +243,6 @@ class _CurrentSkincareRoutineState extends State<CurrentSkincareRoutine> {
                     height: 56,
                     child: ElevatedButton(
                       onPressed: selectedCurrentRoutine != null ? _saveAndContinue : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.teal[500],
-                        // backgroundColor: Colors.cyan,
-                        foregroundColor: Colors.white,
-                        disabledBackgroundColor: const Color(0xFFD8D6E8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(28),
-                        ),
-                        elevation: 0,
-                      ),
                       child: const Text(
                         'Continue',
                         style: TextStyle(
@@ -233,7 +258,6 @@ class _CurrentSkincareRoutineState extends State<CurrentSkincareRoutine> {
                 ],
               ),
             ),
-
           ],
         ),
       ),
