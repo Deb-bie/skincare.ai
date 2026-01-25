@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:myskiin/screens/auth/signin/sign_in.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/utils/utils.dart';
 import '../../../providers/assessment_provider.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../skin_assessment/gender/gender.dart';
@@ -26,10 +29,13 @@ class _SignUpState extends State<SignUp> {
   bool isConfirmPasswordVisible = false;
   bool _isLoading = false;
   bool _agreeToTerms = false;
+  String errorMessage = "";
+  bool _isDisposed = false;
 
 
   @override
   void dispose() {
+    _isDisposed = true;
     userNameController.dispose();
     emailController.dispose();
     passwordController.dispose();
@@ -37,7 +43,39 @@ class _SignUpState extends State<SignUp> {
     super.dispose();
   }
 
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+
+  void _skip() async {
+    final provider = context.read<AssessmentProvider>();
+    await provider.initialize();
+    await UserPreferences.setLoggedIn(true);
+    final prefs = await SharedPreferences.getInstance();
+    final hasCompletedAssessment = prefs.getBool('completed_assessment') ?? false;
+
+    if (hasCompletedAssessment) {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/home', (route) => false,
+      );
+    } else {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/gender', (route) => false,
+      );
+    }
+  }
+
+
   Future<void> _handleSignUp() async {
+    if (_isDisposed || !mounted) return;
+    if (_authService.isSigningOut) return;
+    if (!mounted) return;
+    if (_isLoading) return;
     if (!_formKey.currentState!.validate()) return;
 
     if (!_agreeToTerms) {
@@ -49,9 +87,7 @@ class _SignUpState extends State<SignUp> {
       _showError('Passwords do not match');
       return;
     }
-
     setState(() => _isLoading = true);
-
     final result = await _authService.signUpWithEmail(
       email: emailController.text.trim(),
       password: passwordController.text,
@@ -59,86 +95,81 @@ class _SignUpState extends State<SignUp> {
     );
 
     if (!mounted) return;
+    if (_isDisposed || !mounted) return;
 
     if (result.success) {
+      final provider = context.read<AssessmentProvider>();
+      await provider.initialize();
       await _handleSuccessfulAuth();
+      if (!mounted) return;
     } else {
+      errorMessage = result.message;
       _showError(result.message);
       setState(() => _isLoading = false);
     }
   }
 
+
   Future<void> _handleGoogleSignUp() async {
+    if (!mounted) return;
     if (!_agreeToTerms) {
       _showError('Please agree to the Terms of Service and Privacy Policy');
       return;
     }
-
     setState(() => _isLoading = true);
-
     final result = await _authService.signInWithGoogle();
-
     if (!mounted) return;
 
     if (result.success) {
       await _handleSuccessfulAuth();
+      await UserPreferences.setLoggedIn(true);
     } else {
+      errorMessage = result.message;
       _showError(result.message);
       setState(() => _isLoading = false);
     }
   }
 
+
   Future<void> _handleSuccessfulAuth() async {
-    // Check if there's any local data to sync
-    final provider = Provider.of<AssessmentProvider>(context, listen: false);
+    final provider = context.read<AssessmentProvider>();
+    await provider.initialize();
+    await UserPreferences.setLoggedIn(true);
+    final prefs = await SharedPreferences.getInstance();
+    final hasCompletedAssessment = prefs.getBool('completed_assessment') ?? false;
 
-    // Reload to check if user has any existing data
-    // await provider.reloadData();
-
-    final hasLocalData = provider.getCompletionPercentage() > 0;
-
-    if (hasLocalData) {
-      // User had some local data before signing up - sync it
-      // final syncResult = await provider.syncToCloud();
-
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-
-      // Show sync result
-      // await showDataSyncDialog(context, syncResult);
-
-      if (!mounted) return;
+    if (hasCompletedAssessment) {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/home', (route) => false,
+      );
     } else {
-      // New user, no existing data - just show welcome
-      setState(() => _isLoading = false);
-
-      if (!mounted) return;
-
       await _showWelcomeDialog();
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/gender', (route) => false,
+      );
     }
-
-    if (!mounted) return;
-
-    // Navigate to assessment or home
-    Navigator.of(context).pushReplacementNamed('/assessment-start');
   }
 
+
   Future<void> _showWelcomeDialog() async {
+    final theme = Theme.of(context);
+
     return showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.dialogTheme.backgroundColor,
         elevation: 1,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            Icon(Icons.celebration, color: Colors.teal[500], size: 28),
+            Icon(Icons.celebration, color: theme.primaryColor, size: 28),
             const SizedBox(width: 12),
-            const Text(
+            Text(
               'Welcome! 🎉',
-              style: TextStyle(
-                fontFamily: 'Poppins',
+              style: theme.textTheme.bodyLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -148,39 +179,13 @@ class _SignUpState extends State<SignUp> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               "Your account is all set! Let's create your personalized skincare routine.",
-              style: TextStyle(
-                fontFamily: 'Poppins',
+              style: theme.textTheme.bodyMedium?.copyWith(
                 fontSize: 14,
               ),
             ),
             const SizedBox(height: 16),
-
-            // Container(
-            //   padding: const EdgeInsets.all(12),
-            //   decoration: BoxDecoration(
-            //     color: Colors.teal.shade50,
-            //     borderRadius: BorderRadius.circular(8),
-            //   ),
-            //   child: Row(
-            //     children: [
-            //       Icon(Icons.cloud_done, color: Colors.teal[700], size: 20),
-            //       const SizedBox(width: 8),
-            //       const Expanded(
-            //         child: Text(
-            //           'Your assessment will be automatically backed up',
-            //           style: TextStyle(
-            //             fontFamily: 'Poppins',
-            //             fontSize: 12,
-            //             color: Colors.black87,
-            //           ),
-            //         ),
-            //       ),
-            //     ],
-            //   ),
-            // ),
-
           ],
         ),
         actions: [
@@ -192,7 +197,7 @@ class _SignUpState extends State<SignUp> {
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.teal[500],
+              backgroundColor: theme.primaryColor,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -211,14 +216,51 @@ class _SignUpState extends State<SignUp> {
     );
   }
 
+
+  Future<void> _launchUrl(String url, BuildContext context) async {
+    try {
+      String finalUrl = url;
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        finalUrl = 'https://$url';
+      }
+      final Uri uri = Uri.parse(finalUrl);
+      final bool launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!launched) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not open $finalUrl'),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error launching URL: $e'),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+
   void _showError(String message) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           message,
           style: const TextStyle(fontFamily: 'Poppins'),
         ),
-        backgroundColor: Colors.red[600],
+        backgroundColor: Colors.red[isDark ? 300 : 600],
       ),
     );
   }
@@ -226,44 +268,40 @@ class _SignUpState extends State<SignUp> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: theme.scaffoldBackgroundColor,
 
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF5F5F5),
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: theme.iconTheme.color),
           onPressed: () {
             Navigator.pop(context);
           },
         ),
 
-        title: const Text(
+        title: Text(
           'Sign Up',
-          style: TextStyle(
-            color: Colors.black,
+          style: theme.textTheme.bodyLarge?.copyWith(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            fontFamily: "Poppins"
           ),
         ),
         centerTitle: true,
 
         actions: [
           TextButton(
-            // onPressed: _completeOnboarding,
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const Gender()),
-              );
+              _skip();
             },
-            child: const Text(
+            child: Text(
               'Skip',
-              style: TextStyle(
-                  color: Colors.black,
-                  fontFamily: "Poppins"
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontFamily: "Poppins",
               ),
             ),
           ),
@@ -272,7 +310,6 @@ class _SignUpState extends State<SignUp> {
 
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
-
         child: Form(
           key: _formKey,
 
@@ -280,12 +317,36 @@ class _SignUpState extends State<SignUp> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
 
-              const SizedBox(height: 15),
+              if (errorMessage != "")
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF7A59).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Color(0xFFFF7A59).withValues(alpha: 0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      )
+                    ],
+                  ),
+                  child: Text(
+                    errorMessage,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFFFF7A59),
+                      fontFamily: "Poppins",
+                    ),
+                  ),
+                ),
+
+              const SizedBox(height: 25),
 
               _buildLabel('Username'),
-
               const SizedBox(height: 8),
-
               _buildTextField(
                 controller: userNameController,
                 hintText: 'Enter your username',
@@ -294,9 +355,7 @@ class _SignUpState extends State<SignUp> {
               const SizedBox(height: 28),
 
               _buildLabel('Email'),
-
               const SizedBox(height: 8),
-
               _buildTextField(
                 controller: emailController,
                 hintText: 'Enter your email',
@@ -306,9 +365,7 @@ class _SignUpState extends State<SignUp> {
               const SizedBox(height: 28),
 
               _buildLabel('Password'),
-
               const SizedBox(height: 8),
-
               _buildPasswordField(
                 controller: passwordController,
                 hintText: 'Create a password',
@@ -323,9 +380,7 @@ class _SignUpState extends State<SignUp> {
               const SizedBox(height: 28),
 
               _buildLabel('Confirm Password'),
-
               const SizedBox(height: 8),
-
               _buildPasswordField(
                 controller: confirmPasswordController,
                 hintText: 'Confirm your password',
@@ -339,7 +394,7 @@ class _SignUpState extends State<SignUp> {
 
               const SizedBox(height: 40),
 
-              // Terms and conditions checkbox
+
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -348,54 +403,64 @@ class _SignUpState extends State<SignUp> {
                     onChanged: (value) {
                       setState(() => _agreeToTerms = value ?? false);
                     },
-                    activeColor: Colors.teal[500],
-                    side: BorderSide(width: 1, color: Colors.grey),
+                    activeColor: theme.primaryColor,
+                    side: BorderSide(
+                      width: 1,
+                      color: isDark ? Colors.grey[600]! : Colors.grey,
+                    ),
                   ),
 
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.only(top: 12),
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() => _agreeToTerms = !_agreeToTerms);
-                        },
-                        child: RichText(
-
-                          text: TextSpan(
-                            style: const TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 13,
-                              color: Colors.black87,
-                            ),
-
-                            children: [
-                              const TextSpan(text: 'I agree to the '),
-
-                              TextSpan(
-                                text: 'Terms of Service',
-                                style: TextStyle(
-                                  color: Colors.teal[500],
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-
-                              const TextSpan(text: ' and '),
-
-                              TextSpan(
-                                text: 'Privacy Policy',
-                                style: TextStyle(
-                                  color: Colors.teal[500],
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
+                      child: RichText(
+                        text: TextSpan(
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontSize: 13,
                           ),
+                          children: [
+                            const TextSpan(text: 'I agree to the '),
+                            WidgetSpan(
+                              child: GestureDetector(
+                                onTap: () {
+                                  // Open Terms of Service link
+                                  _launchUrl('https://sites.google.com/view/myskiin/terms', context);
+                                },
+                                child: Text(
+                                  'Terms of Service',
+                                  style: TextStyle(
+                                    color: theme.primaryColor,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const TextSpan(text: ' and '),
+                            WidgetSpan(
+                              child: GestureDetector(
+                                onTap: () {
+                                  // Open Privacy Policy link
+                                  _launchUrl('https://sites.google.com/view/myskiin/privacy-policy', context);
+                                },
+                                child: Text(
+                                  'Privacy Policy',
+                                  style: TextStyle(
+                                    color: theme.primaryColor,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ),
                 ],
               ),
+
 
               const SizedBox(height: 24),
 
@@ -421,57 +486,53 @@ class _SignUpState extends State<SignUp> {
     );
   }
 
+
   Widget _buildLabel(String text) {
+    final theme = Theme.of(context);
+
     return Text(
       text,
-      style: const TextStyle(
-        color: Colors.black,
+      style: theme.textTheme.bodyLarge?.copyWith(
         fontSize: 16,
         fontWeight: FontWeight.normal,
-          fontFamily: "Poppins"
       ),
     );
   }
+
 
   Widget _buildTextField({
     required TextEditingController controller,
     required String hintText,
     TextInputType keyboardType = TextInputType.text,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 4
-      ),
+    final theme = Theme.of(context);
 
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
       decoration: BoxDecoration(
-        // color: const Color(0x32E0F2F2),
-        color: Colors.grey[200],
+        color: theme.inputDecorationTheme.fillColor,
         borderRadius: BorderRadius.circular(12),
       ),
 
       child: TextField(
         controller: controller,
         keyboardType: keyboardType,
-        style: const TextStyle(
-          color: Colors.black,
+        style: theme.textTheme.bodyMedium?.copyWith(
           fontSize: 14,
-            fontFamily: "Poppins"
         ),
-
         decoration: InputDecoration(
           hintText: hintText,
-          hintStyle: TextStyle(
-            // color: const Color(0xFF00D9D9).withOpacity(0.6),
+          hintStyle: theme.inputDecorationTheme.hintStyle?.copyWith(
             fontSize: 14,
-              fontFamily: "Poppins"
           ),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         ),
       ),
     );
   }
+
+
 
   Widget _buildPasswordField({
     required TextEditingController controller,
@@ -479,40 +540,32 @@ class _SignUpState extends State<SignUp> {
     required bool isVisible,
     required VoidCallback onToggleVisibility,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 4
-      ),
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
       decoration: BoxDecoration(
-        // color: const Color(0xFFE0F2F2),
-        color: Colors.grey[200],
+        color: theme.inputDecorationTheme.fillColor,
         borderRadius: BorderRadius.circular(12),
       ),
-
       child: TextField(
         controller: controller,
         obscureText: !isVisible,
-        style: const TextStyle(
-          color: Colors.black,
+        style: theme.textTheme.bodyMedium?.copyWith(
           fontSize: 14,
-          fontFamily: "Poppins"
         ),
-
         decoration: InputDecoration(
           hintText: hintText,
-          hintStyle: TextStyle(
-            // color: Colors.black,
+          hintStyle: theme.inputDecorationTheme.hintStyle?.copyWith(
             fontSize: 14,
-              fontFamily: "Poppins"
           ),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
           suffixIcon: IconButton(
             icon: Icon(
               isVisible ? Icons.visibility : Icons.visibility_off,
-              color: Colors.grey,
+              color: isDark ? Colors.grey[500] : Colors.grey,
             ),
             onPressed: onToggleVisibility,
           ),
@@ -521,18 +574,21 @@ class _SignUpState extends State<SignUp> {
     );
   }
 
+
+
   Widget _buildSignUpButton() {
+    final theme = Theme.of(context);
+
     return ElevatedButton(
       onPressed: _isLoading ? null : _handleSignUp,
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.teal[500],
+        backgroundColor: theme.primaryColor,
         padding: const EdgeInsets.symmetric(vertical: 18),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(30),
         ),
         elevation: 0,
       ),
-
       child: _isLoading
           ? const SizedBox(
         width: 24,
@@ -551,17 +607,19 @@ class _SignUpState extends State<SignUp> {
           fontFamily: 'Poppins',
         ),
       ),
-
     );
   }
 
 
+
   Widget _buildDivider() {
+    final theme = Theme.of(context);
+
     return Row(
       children: [
         Expanded(
           child: Divider(
-            color: Colors.grey.shade400,
+            color: theme.dividerTheme.color,
             thickness: 1,
           ),
         ),
@@ -569,8 +627,7 @@ class _SignUpState extends State<SignUp> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
             'OR',
-            style: TextStyle(
-              color: Colors.grey.shade600,
+            style: theme.textTheme.bodyMedium?.copyWith(
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
@@ -578,7 +635,7 @@ class _SignUpState extends State<SignUp> {
         ),
         Expanded(
           child: Divider(
-            color: Colors.grey.shade400,
+            color: theme.dividerTheme.color,
             thickness: 1,
           ),
         ),
@@ -588,6 +645,9 @@ class _SignUpState extends State<SignUp> {
 
 
   Widget _buildGoogleSignUpButton() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return OutlinedButton.icon(
       onPressed: _isLoading ? null : _handleGoogleSignUp,
       icon: Image.asset(
@@ -595,38 +655,42 @@ class _SignUpState extends State<SignUp> {
         width: 20,
         height: 20,
         errorBuilder: (context, error, stackTrace) {
-          return const Icon(
-              Icons.g_mobiledata,
-              size: 24,
-              color: Colors.black)
-          ;
+          return Icon(
+            Icons.g_mobiledata,
+            size: 24,
+            color: theme.iconTheme.color,
+          );
         },
       ),
       label: Padding(
         padding: const EdgeInsets.fromLTRB(20.0, 0, 0, 0),
-        child: const Text(
+        child: Text(
           'Sign up with Google',
-          style: TextStyle(
-            color: Colors.black,
+          style: theme.textTheme.bodyLarge?.copyWith(
             fontSize: 16,
             fontWeight: FontWeight.normal,
-            fontFamily: "Poppins"
           ),
         ),
       ),
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 16),
-        side: BorderSide(color: Colors.grey.shade300, width: 1.5),
+        side: BorderSide(
+          color: isDark ? Colors.grey[700]! : Colors.grey.shade300,
+          width: 1.5,
+        ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(30),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: theme.cardTheme.color,
       ),
     );
   }
 
 
+
   Widget _buildLoginLink() {
+    final theme = Theme.of(context);
+
     return Center(
       child: GestureDetector(
         onTap: () {
@@ -638,17 +702,15 @@ class _SignUpState extends State<SignUp> {
         child: RichText(
           text: TextSpan(
             text: 'Already have an account? ',
-            style: TextStyle(
-              color: Colors.grey.shade700,
-              fontFamily: "Poppins",
+            style: theme.textTheme.bodyMedium?.copyWith(
               fontSize: 15,
             ),
             children: [
               TextSpan(
                 text: 'Log In',
                 style: TextStyle(
-                  color: Colors.teal[500],
-                    fontFamily: "Poppins",
+                  color: theme.primaryColor,
+                  fontFamily: "Poppins",
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -658,13 +720,4 @@ class _SignUpState extends State<SignUp> {
       ),
     );
   }
-
-  // @override
-  // void dispose() {
-  //   userNameController.dispose();
-  //   emailController.dispose();
-  //   passwordController.dispose();
-  //   confirmPasswordController.dispose();
-  //   super.dispose();
-  // }
 }
