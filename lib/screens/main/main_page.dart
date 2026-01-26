@@ -6,7 +6,7 @@ import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:provider/provider.dart';
 import '../../providers/product_provider.dart';
 import '../home/home.dart';
-import '../profile/profile2.dart';
+import '../profile/profile.dart';
 import '../routine/routine_page.dart';
 
 class MainPage extends StatefulWidget {
@@ -33,7 +33,7 @@ class _MainPageState extends State<MainPage> {
       Home(),
       RoutinePage(),
       RoutineHistoryScreen(),
-      ProfilePage2(),
+      ProfileScreen(),
     ];
   }
 
