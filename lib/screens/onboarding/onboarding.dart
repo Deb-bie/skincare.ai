@@ -17,6 +17,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
   @override
   void initState() {
     super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {});
   }
 
 
@@ -50,31 +52,48 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       child: Wrap(
                         alignment: WrapAlignment.center,
                         spacing: 16,
-                        runSpacing: 16,
+                        // runSpacing: 16,
                         children: [
-                          FeatureCard(
-                            icon: Icons.search,
-                            title: 'Discover Skin Needs',
-                            color: colorScheme.primary,
+
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              FeatureCard(
+                                icon: Icons.search,
+                                title: 'Discover Skin Needs',
+                                color: colorScheme.primary,
+                              ),
+
+                              FeatureCard(
+                                icon: Icons.playlist_add_check,
+                                title: 'Build Your Routine',
+                                color: colorScheme.primary,
+                              ),
+                            ],
                           ),
 
-                          FeatureCard(
-                            icon: Icons.playlist_add_check,
-                            title: 'Build Your Routine',
-                            color: colorScheme.primary,
+                          const SizedBox(height: 16,),
+
+
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              FeatureCard(
+                                icon: Icons.trending_up,
+                                title: 'Track Your Progress',
+                                color: colorScheme.primary,
+                              ),
+
+                              FeatureCard(
+                                icon: Icons.chat_bubble_outline,
+                                title: 'Chat with our AI',
+                                color: colorScheme.primary,
+                              ),
+                            ],
                           ),
 
-                          FeatureCard(
-                            icon: Icons.trending_up,
-                            title: 'Track Your Progress',
-                            color: colorScheme.primary,
-                          ),
 
-                          FeatureCard(
-                            icon: Icons.chat_bubble_outline,
-                            title: 'Chat with our AI',
-                            color: colorScheme.primary,
-                          ),
+
                         ],
                       ),
                     ),
@@ -105,11 +124,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   void _handleGetStarted(BuildContext context) async {
     await UserPreferences.setOnboardingComplete();
-    Navigator.pushNamedAndRemoveUntil(
+
+    Navigator.pushReplacementNamed(
       context,
       '/signin',
-          (route) => false,
-      arguments: SignInSource.back,
+      arguments: SignInSource.back
     );
   }
 
