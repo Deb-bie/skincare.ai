@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "983828570941",
+    "project_id": "myskincare-app-f8288",
+    "storage_bucket": "myskincare-app-f8288.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:983828570941:android:0974d23840313f0fdd5b54",
+        "android_client_info": {
+          "package_name": "ai.tryskincare.myskiin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC_yC6sboKvyBBj30XRzU9sT0xGCLk3kQc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
