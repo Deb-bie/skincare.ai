@@ -16,218 +16,184 @@ class SkinTypeResults extends StatefulWidget {
 
 class _SkinTypeResultsState extends State<SkinTypeResults> {
 
-
   Future<SkinTypeAnalysis> _loadResults(BuildContext context) async {
     final provider = Provider.of<SkinTypeAssessmentProvider>(context, listen: false);
-
     final results = await provider.getSkinType();
-
     final assessmentProvider = Provider.of<AssessmentProvider>(context, listen: false);
     assessmentProvider.updateSkinType(results.primary);
-
     return results;
-
   }
-
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return FutureBuilder<SkinTypeAnalysis>(
-        future: _loadResults(context),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          }
-
-          final results = snapshot.data!;
-
+      future: _loadResults(context),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
           return Scaffold(
-            backgroundColor: const Color(0xFFF5F5F5),
-
-            appBar: AppBar(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.black),
-                onPressed: () {
-                  Navigator.pop(context);
-                },
+            backgroundColor: theme.scaffoldBackgroundColor,
+            body: Center(
+              child: CircularProgressIndicator(
+                color: colorScheme.primary,
               ),
-              title: const Text(
-                'Quiz Results',
-                style: TextStyle(
-                  fontSize: 20,
-                  color: Colors.black,
-                  fontWeight: FontWeight.normal,
-                  fontFamily: 'Poppins',
-                ),
-              ),
-              centerTitle: true,
             ),
+          );
+        }
 
-            body: Column(
-              children: [
+        final results = snapshot.data!;
 
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.only(left: 24, right: 24),
-                    child: Column(
-                      children: [
-                        const Text(
-                          'Your Skin Type:',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.normal,
-                            fontFamily: "Poppins",
-                            color: Colors.black,
-                            height: 1.2,
-                          ),
-                        ),
-
-                        const SizedBox(height: 15),
-
-                        Text(
-                          results.primary,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                            height: 1.2,
-                            fontFamily: "Poppins",
-                          ),
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 10),
-                          child: Text(
-                            results.skinTypeMeaning!,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey,
-                              height: 1.5,
-                              fontFamily: "Poppins",
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 40),
-
-                        Container(
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEDE7E0),
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          padding: const EdgeInsets.all(40),
-                          child: Center(
-                            child: CustomPaint(
-                              size: const Size(250, 250),
-                              painter: SkinIllustrationPainter(),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 30),
-
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(28),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(24),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Personalized Insight',
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black,
-                                  fontFamily: "Poppins",
-                                ),
-                              ),
-
-                              const SizedBox(height: 16),
-
-                              Text(
-                                results.typePersonalizedInsight!,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.grey.shade700,
-                                  height: 1.6,
-                                  fontFamily: "Poppins",
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                Padding(
-                  padding: const EdgeInsets.all(24),
+        return Scaffold(
+          backgroundColor: theme.scaffoldBackgroundColor,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back, color: theme.iconTheme.color),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
+            title: Text(
+              'Your Skin Type',
+              style: theme.textTheme.headlineMedium?.copyWith(
+                fontSize: 20,
+                fontWeight: FontWeight.normal,
+              ),
+            ),
+            centerTitle: true,
+          ),
+          body: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.only(left: 24, right: 24),
                   child: Column(
                     children: [
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => const SkinConcerns()),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            // backgroundColor: Colors.cyan,
-                            backgroundColor: const Color(0xFFFF7A59),
-                            foregroundColor: Colors.white,
-                            disabledBackgroundColor: const Color(0xFFD8D6E8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(28),
-                            ),
-                            elevation: 0,
+                      const SizedBox(height: 15),
+                      Text(
+                        results.primary,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.displayLarge?.copyWith(
+                          fontSize: 32,
+                          height: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 10),
+                        child: Text(
+                          results.skinTypeMeaning!,
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontSize: 16,
+                            height: 1.5,
                           ),
-                          child: const Text(
-                            'Continue Assessments',
-                            style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.normal,
-                                fontFamily: "Poppins"
+                        ),
+                      ),
+                      const SizedBox(height: 40),
+                      Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: theme.brightness == Brightness.dark
+                              ? Color(0xFF2C2C2C)
+                              : Color(0xFFEDE7E0),
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        padding: const EdgeInsets.all(40),
+                        child: Center(
+                          child: CustomPaint(
+                            size: const Size(250, 250),
+                            painter: SkinIllustrationPainter(
+                              isDarkMode: theme.brightness == Brightness.dark,
                             ),
                           ),
                         ),
                       ),
-
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 30),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(28),
+                        decoration: BoxDecoration(
+                          color: theme.cardTheme.color,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Personalized Insight',
+                              style: theme.textTheme.headlineMedium?.copyWith(
+                                fontSize: 22,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              results.typePersonalizedInsight!,
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                fontSize: 16,
+                                height: 1.6,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 50),
                     ],
                   ),
                 ),
-
-              ],
-            ),
-          );
-        }
+              ),
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const SkinConcerns(),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFFFF7A59),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(28),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          'Continue Assessments',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.normal,
+                            fontFamily: "Poppins",
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
