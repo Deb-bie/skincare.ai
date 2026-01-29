@@ -78,8 +78,6 @@ class UserPreferences {
 }
 
 
-// Add this to your ProductCategoryOrder class or as a separate utility
-
 class ProductCategoryHelper {
   // Map of display names to enum values
   static const Map<String, ProductCategory> _categoryMap = {
